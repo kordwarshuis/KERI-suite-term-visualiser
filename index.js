@@ -83,10 +83,10 @@ async function fetchPage(url) {
 /** Clean up the messy text content of a <dt> into a human label. */
 function cleanLabel(raw) {
     return raw
-        .replaceAll(/\s+/g, ' ')
-        .replaceAll(/[①②③]+/g, '')
-        .replaceAll(/\[Link to[^\]]*\]/gi, '')
-        .replaceAll(/^[§\s.0-9]+/, '')
+        .replace(/\s+/g, ' ')
+        .replace(/[①②③]+/g, '')
+        .replace(/\[Link to[^\]]*\]/gi, '')
+        .replace(/^[§\s.0-9]+/, '')
         .trim();
 }
 
