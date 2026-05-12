@@ -334,8 +334,8 @@ function render({ nodes, links }) {
             .attr('orient', 'auto')
             .append('path')
             .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-                .attr('fill', 'context-stroke')
-                .attr('stroke', 'context-stroke');
+            .attr('fill', 'context-stroke')
+            .attr('stroke', 'context-stroke');
     }
     makeArrow('arrow-hub');
     makeArrow('arrow-internal');
