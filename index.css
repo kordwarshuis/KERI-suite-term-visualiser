@@ -203,28 +203,29 @@
     /* ── D3 NODE / LINK STYLES ────────────────────────────────────────────── */
     .link {
         fill: none;
-        stroke-width: 1;
+        stroke-width: 1.25;
+        opacity: .48;
     }
 
     .link.hub {
-        stroke-opacity: .12;
-        stroke-width: .6;
+        opacity: .34;
+        stroke-width: .85;
     }
 
     .link.internal {
-        stroke-opacity: .35;
-        stroke-width: 1;
+        opacity: .62;
+        stroke-width: 1.25;
     }
 
     .link.cross-spec {
-        stroke-opacity: .65;
-        stroke-width: 1.4;
+        opacity: .82;
+        stroke-width: 1.7;
         stroke-dasharray: 6 3;
     }
 
     .link.external {
-        stroke-opacity: .2;
-        stroke-width: .8;
+        opacity: .42;
+        stroke-width: 1.1;
         stroke-dasharray: 2 5;
     }
 

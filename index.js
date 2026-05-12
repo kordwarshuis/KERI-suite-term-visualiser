@@ -329,8 +329,8 @@ function render({ nodes, links }) {
             .attr('orient', 'auto')
             .append('path')
             .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-            .attr('fill', 'currentColor')
-            .attr('stroke', 'currentColor');
+                .attr('fill', 'context-stroke')
+                .attr('stroke', 'context-stroke');
     }
     makeArrow('arrow-hub');
     makeArrow('arrow-internal');
@@ -409,21 +409,12 @@ function render({ nodes, links }) {
             if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
             return specColor[d.source.specId] || '#fff';
         })
-        .attr('color', d => {
-            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
-            if (d.type === 'external') return specColor['external'];
-            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
-            return specColor[d.source.specId] || '#fff';
-        })
         .attr('marker-end', d => {
-            const markerType = d.type === 'hub' ? 'hub' : d.type === 'external' ? 'external' : d.type === 'cross-spec' ? 'cross-spec' : 'internal';
+            let markerType = 'internal';
+            if (d.type === 'hub') markerType = 'hub';
+            else if (d.type === 'external') markerType = 'external';
+            else if (d.type === 'cross-spec') markerType = 'cross-spec';
             return `url(#arrow-${markerType})`;
-        })
-        .style('color', d => {
-            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
-            if (d.type === 'external') return specColor['external'];
-            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
-            return specColor[d.source.specId] || '#fff';
         });
 
     // ── Draw nodes ───────────────────────────────────────────────────────────
