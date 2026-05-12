@@ -542,7 +542,7 @@ function render({ nodes, links }) {
             tt.innerHTML = `
                             <div class="tt-name">${d.label}</div>
                             <div class="tt-spec">${spec ? spec.fullLabel : d.specId}</div>
-                            ${d.slug ? `<div class="tt-slug">slug: ${d.slug}</div>` : ''}
+                            ${d.slug ? `<div class="tt-slug">${d.slug}</div>` : ''}
                             `;
             tt.style.display = 'block';
         })
