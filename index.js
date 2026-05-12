@@ -440,6 +440,37 @@ function render({ nodes, links }) {
 
     // ── Tooltip ──────────────────────────────────────────────────────────────
     const tt = document.getElementById('tooltip');
+    let activeSelection = null;
+    let activeNeighborIds = new Set();
+    let activeLinkKeys = new Set();
+
+    const linkKey = l => `${l.source.id}→${l.target.id}`;
+    const resetSelection = () => {
+        activeSelection = null;
+        activeNeighborIds.clear();
+        activeLinkKeys.clear();
+        nodeEl.select('circle').style('opacity', null);
+        nodeEl.select('text').style('opacity', null);
+        linkEl.style('opacity', null);
+    };
+    const setSelection = node => {
+        activeSelection = node.id;
+        activeNeighborIds = new Set([node.id]);
+        activeLinkKeys = new Set();
+        for (const l of links) {
+            if (l.source.id === node.id) {
+                activeNeighborIds.add(l.target.id);
+                activeLinkKeys.add(linkKey(l));
+            }
+            if (l.target.id === node.id) {
+                activeNeighborIds.add(l.source.id);
+                activeLinkKeys.add(linkKey(l));
+            }
+        }
+        nodeEl.select('circle').style('opacity', d => activeNeighborIds.has(d.id) ? 1 : 0.06);
+        nodeEl.select('text').style('opacity', d => activeNeighborIds.has(d.id) ? 1 : 0.04);
+        linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
+    };
 
     nodeEl
         .on('mouseenter', (ev, d) => {
@@ -455,7 +486,19 @@ function render({ nodes, links }) {
             tt.style.left = (ev.clientX + 16) + 'px';
             tt.style.top = (ev.clientY - 8) + 'px';
         })
-        .on('mouseleave', () => { tt.style.display = 'none'; });
+        .on('mouseleave', () => { tt.style.display = 'none'; })
+        .on('click', (ev, d) => {
+            ev.stopPropagation();
+            if (activeSelection === d.id) {
+                resetSelection();
+            } else {
+                setSelection(d);
+            }
+        });
+
+    svg.on('click', ev => {
+        if (ev.target === svg.node()) resetSelection();
+    });
 
     // ── Tick ─────────────────────────────────────────────────────────────────
     simulation.on('tick', () => {
