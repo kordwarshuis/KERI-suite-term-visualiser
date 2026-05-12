@@ -542,8 +542,34 @@ function render({ nodes, links }) {
     // ── Tick ─────────────────────────────────────────────────────────────────
     simulation.on('tick', () => {
         linkEl
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+            .attr('x1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.source.r || 0;
+                return d.source.x + (dx / dist) * r;
+            })
+            .attr('y1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.source.r || 0;
+                return d.source.y + (dy / dist) * r;
+            })
+            .attr('x2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.target.r || 0;
+                return d.target.x - (dx / dist) * r;
+            })
+            .attr('y2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.target.r || 0;
+                return d.target.y - (dy / dist) * r;
+            });
         nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
     });
 
