@@ -427,14 +427,28 @@ function render({ nodes, links }) {
     // ── Draw nodes ───────────────────────────────────────────────────────────
     const nodeLayer = zoomG.append('g').attr('class', 'nodes-layer');
 
+    let isDragging = false;
+
     const nodeEl = nodeLayer.selectAll('g')
         .data(nodes)
         .join('g')
         .attr('class', d => `node ${d.nodeType}`)
         .call(d3.drag()
-            .on('start', (ev, d) => { if (!ev.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('start', (ev, d) => { 
+                if (!ev.active) simulation.alphaTarget(0.3).restart(); 
+                d.fx = d.x; 
+                d.fy = d.y;
+                isDragging = true;
+                linkEl.style('opacity', 0).style('pointer-events', 'none');
+            })
             .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
-            .on('end', (ev, d) => { if (!ev.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+            .on('end', (ev, d) => { 
+                if (!ev.active) simulation.alphaTarget(0); 
+                d.fx = null; 
+                d.fy = null;
+                isDragging = false;
+                linkEl.style('opacity', null).style('pointer-events', null);
+            })
         );
 
     // Circles
