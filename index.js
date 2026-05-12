@@ -27,6 +27,20 @@ const CONFIG = {
             url: 'https://trustoverip.github.io/kswg-cesr-specification/',
             color: '#ff8800',   // neon orange
         },
+        {
+            id: 'kerisuite',
+            label: 'KERI Suite',
+            fullLabel: 'KERI Suite',
+            url: 'https://trustoverip.github.io/kerisuite-glossary/',
+            color: '#cc44ff',
+        },
+        // {
+        //     id: 'toip-glossary',
+        //     label: 'ToIP Glossary',
+        //     fullLabel: 'Trust over IP Glossary',
+        //     url: 'https://glossary.trustoverip.org/',
+        //     color: '#cc44ff',
+        // },
         // ── add extra specs below ─────────────────────────────────────────────────
         // {
         //   id:        'oobi',
