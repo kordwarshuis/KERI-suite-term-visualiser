@@ -459,7 +459,7 @@ function render({ nodes, links }) {
         .attr('dy', d => d.nodeType === 'hub' ? '.35em' : d.r + 11)
         .attr('text-anchor', 'middle')
         .attr('fill', d => {
-            if (d.nodeType === 'hub') return specColor[d.specId];
+            if (d.nodeType === 'hub') return '#ffffff';
             if (d.nodeType === 'external') return '#7a5028';
             return '#8aaa9a';
         })
