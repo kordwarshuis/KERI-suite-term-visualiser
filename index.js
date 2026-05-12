@@ -61,6 +61,11 @@ const CONFIG = {
     externalCharge: -200,    // repulsion of external-glossary nodes
     centerStrength: 0.06,    // how strongly nodes are pulled toward their cluster
     clusterRadiusFraction: 0.27,  // fraction of min(W,H) for hub positions
+
+    // Simulation settling controls (higher values settle faster).
+    simulationVelocityDecay: 0.8, // damping per tick; range 0.1–1.0; default in d3 is 0.4
+    simulationAlphaDecay: 0.08,    // cooling rate; range 0.001–0.1; was 0.007
+    simulationAlphaMin: 0.08,      // stop threshold; range 0.001–0.1; default in d3 is 0.001
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -387,7 +392,9 @@ function render({ nodes, links }) {
             }
         })
         .force('collide', d3.forceCollide().radius(d => d.r + 1.5).strength(0.7))
-        .alphaDecay(0.007);
+        .velocityDecay(CONFIG.simulationVelocityDecay)
+        .alphaDecay(CONFIG.simulationAlphaDecay)
+        .alphaMin(CONFIG.simulationAlphaMin);
 
     // ── Zoom / Pan ───────────────────────────────────────────────────────────
     const zoomG = svg.append('g');
