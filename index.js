@@ -432,10 +432,20 @@ function render({ nodes, links }) {
             return '#8aaa9a';
         })
         .attr('filter', d => d.nodeType === 'hub' ? 'url(#glow-md)' : null)
+        .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null)
         .text(d => {
             if (d.nodeType === 'hub') return d.label;
             if (d.nodeType === 'external') return d.label.slice(0, 22);
             return d.label.length > 30 ? d.label.slice(0, 28) + '…' : d.label;
+        })
+        .on('click', (ev, d) => {
+            if (d.nodeType !== 'term') return;
+            ev.stopPropagation();
+            const spec = specById[d.specId];
+            if (!spec || !d.slug) return;
+            const anchor = `#term:${encodeURIComponent(d.slug)}`;
+            const url = `${spec.url.replace(/\/$/, '')}${anchor}`;
+            window.open(url, '_blank', 'noopener');
         });
 
     // ── Tooltip ──────────────────────────────────────────────────────────────

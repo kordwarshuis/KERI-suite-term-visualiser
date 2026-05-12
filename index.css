@@ -239,6 +239,11 @@
         pointer-events: none;
     }
 
+    .node.term text {
+        pointer-events: auto;
+        cursor: pointer;
+    }
+
     .node.hub text {
         font-size: 14px;
         font-weight: bold;
