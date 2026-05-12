@@ -110,8 +110,8 @@ function cleanLabel(raw) {
             */
 function slugFromDt(dt) {
     const raw = dt.id
-        || dt.querySelector('a[id]')?.id
-        || dt.querySelector('a[name]')?.getAttribute('name')
+        || dt.querySelector('[id]')?.id
+        || dt.querySelector('[name]')?.getAttribute('name')
         || '';
     return raw.replace(/^term:/, '') || null;
 }
@@ -125,7 +125,7 @@ function slugFromDt(dt) {
  */
 function deriveSlug(label) {
     // Prefer parenthesised explicit slug at end: "... (foo, the-slug)"
-    const m = label.match(/\(\s*(?:[^,)]+,\s*)?([a-z][a-z0-9-]{1, 60})\s*\)\s*$/i);
+    const m = label.match(/\(\s*(?:[^,)]+,\s*)?([a-z][a-z0-9-]{1,60})\s*\)\s*$/i);
     if (m) return m[1].toLowerCase();
     // Fallback: kebab-case from whole label
     return label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/, '').slice(0, 60);
