@@ -329,7 +329,8 @@ function render({ nodes, links }) {
             .attr('orient', 'auto')
             .append('path')
             .attr('d', 'M 0 0 L 10 5 L 0 10 z')
-            .attr('fill', 'currentColor');
+            .attr('fill', 'currentColor')
+            .attr('stroke', 'currentColor');
     }
     makeArrow('arrow-hub');
     makeArrow('arrow-internal');
@@ -403,6 +404,12 @@ function render({ nodes, links }) {
         .join('line')
         .attr('class', d => `link ${d.type}`)
         .attr('stroke', d => {
+            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
+            if (d.type === 'external') return specColor['external'];
+            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+            return specColor[d.source.specId] || '#fff';
+        })
+        .attr('color', d => {
             if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
             if (d.type === 'external') return specColor['external'];
             if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
