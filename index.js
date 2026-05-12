@@ -319,6 +319,25 @@ function render({ nodes, links }) {
     makeGlow('glow-md', 5);
     makeGlow('glow-lg', 10);
 
+    function makeArrow(id) {
+        defs.append('marker')
+            .attr('id', id)
+            .attr('viewBox', '0 0 10 10')
+            .attr('refX', 9)
+            .attr('refY', 5)
+            .attr('markerUnits', 'strokeWidth')
+            .attr('markerWidth', 7)
+            .attr('markerHeight', 7)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+            .attr('fill', 'currentColor');
+    }
+    makeArrow('arrow-hub');
+    makeArrow('arrow-internal');
+    makeArrow('arrow-cross-spec');
+    makeArrow('arrow-external');
+
     // ── Background ───────────────────────────────────────────────────────────
     svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'url(#bg-grid)');
 
@@ -386,6 +405,16 @@ function render({ nodes, links }) {
         .join('line')
         .attr('class', d => `link ${d.type}`)
         .attr('stroke', d => {
+            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
+            if (d.type === 'external') return specColor['external'];
+            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+            return specColor[d.source.specId] || '#fff';
+        })
+        .attr('marker-end', d => {
+            const markerType = d.type === 'hub' ? 'hub' : d.type === 'external' ? 'external' : d.type === 'cross-spec' ? 'cross-spec' : 'internal';
+            return `url(#arrow-${markerType})`;
+        })
+        .style('color', d => {
             if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
             if (d.type === 'external') return specColor['external'];
             if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
