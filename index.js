@@ -246,7 +246,7 @@ function buildGraphData(allTerms, allRawLinks) {
     // ── Hub nodes (one per spec) ─────────────────────────────────────────────
     const hubId = s => `hub::${s.id}`;
     for (const s of CONFIG.specs) {
-        nodes.push({ id: hubId(s), label: s.label, fullLabel: s.fullLabel, specId: s.id, nodeType: 'hub', r: 24 });
+        nodes.push({ id: hubId(s), label: s.label, fullLabel: s.fullLabel, specId: s.id, nodeType: 'hub', r: 34 });
     }
 
     // ── Term nodes ───────────────────────────────────────────────────────────
@@ -455,8 +455,8 @@ function render({ nodes, links }) {
         });
 
     // Labels
-    nodeEl.append('text')
-        .attr('dy', d => d.r + 11)
+    const labelEl = nodeEl.append('text')
+        .attr('dy', d => d.nodeType === 'hub' ? '.35em' : d.r + 11)
         .attr('text-anchor', 'middle')
         .attr('fill', d => {
             if (d.nodeType === 'hub') return specColor[d.specId];
@@ -464,9 +464,25 @@ function render({ nodes, links }) {
             return '#8aaa9a';
         })
         .attr('filter', d => d.nodeType === 'hub' ? 'url(#glow-md)' : null)
-        .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null)
+        .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null);
+
+    labelEl
+        .filter(d => d.nodeType === 'hub')
+        .each(function (d) {
+            const txt = d3.select(this);
+            txt.text(null);
+            const words = d.label.split(/\s+/).filter(Boolean);
+            if (words.length <= 1) {
+                txt.append('tspan').attr('x', 0).attr('dy', 0).text(d.label);
+            } else {
+                txt.append('tspan').attr('x', 0).attr('dy', '-0.5em').text(words[0]);
+                txt.append('tspan').attr('x', 0).attr('dy', '1.05em').text(words.slice(1).join(' '));
+            }
+        });
+
+    labelEl
+        .filter(d => d.nodeType !== 'hub')
         .text(d => {
-            if (d.nodeType === 'hub') return d.label;
             if (d.nodeType === 'external') return d.label.slice(0, 22);
             return d.label.length > 30 ? d.label.slice(0, 28) + '…' : d.label;
         })
@@ -509,8 +525,14 @@ function render({ nodes, links }) {
                 activeLinkKeys.add(linkKey(l));
             }
         }
-        nodeEl.select('circle').style('opacity', d => activeNeighborIds.has(d.id) ? 1 : 0.06);
-        nodeEl.select('text').style('opacity', d => activeNeighborIds.has(d.id) ? 1 : 0.04);
+        nodeEl.select('circle').style('opacity', d => {
+            if (d.nodeType === 'hub' || activeNeighborIds.has(d.id)) return 1;
+            return 0.06;
+        });
+        nodeEl.select('text').style('opacity', d => {
+            if (d.nodeType === 'hub' || activeNeighborIds.has(d.id)) return 1;
+            return 0.04;
+        });
         linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
     };
 
