@@ -249,10 +249,8 @@ function buildGraphData(allTerms, allRawLinks) {
         nodes.push({ ...t, nodeType: 'term', r: 5.5 });
     }
 
-    // ── Hub → term edges (keep clusters together) ────────────────────────────
-    for (const t of allTerms) {
-        links.push({ source: hubId(specById[t.specId]), target: t.id, type: 'hub' });
-    }
+    // ── Hub nodes are created for clustering and annotation only.
+    //     We do not add per-term hub edges to save edge count.
 
     // ── Resolve raw links ────────────────────────────────────────────────────
     const extNodes = new Map();   // externalLabel → nodeId
