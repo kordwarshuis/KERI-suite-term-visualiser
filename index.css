@@ -223,6 +223,12 @@
         stroke-dasharray: 6 3;
     }
 
+    .link.tref {
+        opacity: .90;
+        stroke-width: 1.8;
+        stroke-dasharray: none;
+    }
+
     .link.external {
         opacity: .42;
         stroke-width: 1.1;

@@ -226,6 +226,45 @@ function parsePage(html, spec) {
         }
     }
 
+    // ── Extract cross-spec tref links from embedded allXTrefs data ──────────
+    // Spec-Up-T embeds an `allXTrefs` JSON object in an inline <script> tag.
+    // Each entry with sourceFiles[].type === "tref" means the term in THIS spec
+    // is borrowed from an external spec (ghPageUrl), creating a cross-spec link.
+    for (const script of doc.querySelectorAll('script:not([src])')) {
+        const text = (script.textContent || '').trim();
+        if (!text.includes('"xtrefs"')) continue;
+        try {
+            // Content is: const allXTrefs = {...};
+            const eqIdx = text.indexOf('=');
+            if (eqIdx === -1) break;
+            const jsonStr = text.slice(eqIdx + 1).trim().replace(/;\s*$/, '');
+            const xtData = JSON.parse(jsonStr);
+            let trefCount = 0;
+            for (const xt of (xtData.xtrefs || [])) {
+                const hasTref = (xt.sourceFiles || []).some(f => f.type === 'tref');
+                if (!hasTref) continue;
+                const slug = xt.term;
+                if (!slug) continue;
+                const ghPageUrl = (xt.ghPageUrl || '').replace(/\/$/, '');
+                for (const s of CONFIG.specs) {
+                    if (s.id === spec.id) continue;
+                    if (ghPageUrl === s.url.replace(/\/$/, '')) {
+                        rawLinks.push({
+                            fromId: `${spec.id}::${slug}`,
+                            cl: { type: 'tref', specId: s.id, slug },
+                        });
+                        trefCount++;
+                        break;
+                    }
+                }
+            }
+            console.log(`[graph] ${spec.id}: ${trefCount} tref cross-spec links extracted from allXTrefs`);
+        } catch (e) {
+            console.warn(`[graph] Failed to parse allXTrefs for ${spec.id}:`, e);
+        }
+        break; // only one allXTrefs script tag
+    }
+
     return { terms, rawLinks };
 }
 
@@ -283,7 +322,11 @@ function buildGraphData(allTerms, allRawLinks) {
             let targetId = termIndex.get(key)
                 || termIndex.get(`${cl.specId}::${cl.slug.replace(/_/g, '-').toLowerCase()}`);
             if (!targetId) continue;
-            addEdge(fromId, targetId, cl.type);
+            // Resolve fromId to the actual node id — xtrefs slugs may differ from slugFromDt
+            const srcId = termIndex.get(fromId)
+                || termIndex.get(fromId.replace(/_/g, '-').toLowerCase());
+            if (!srcId) continue;
+            addEdge(srcId, targetId, cl.type);
         }
     }
 
@@ -340,6 +383,7 @@ function render({ nodes, links }) {
     makeArrow('arrow-hub');
     makeArrow('arrow-internal');
     makeArrow('arrow-cross-spec');
+    makeArrow('arrow-tref');
     makeArrow('arrow-external');
 
     // ── Background ───────────────────────────────────────────────────────────
@@ -370,12 +414,14 @@ function render({ nodes, links }) {
                 if (l.type === 'hub') return 95;
                 if (l.type === 'internal') return 40;
                 if (l.type === 'cross-spec') return 180;
+                if (l.type === 'tref') return 130;
                 return 130;  // external
             })
             .strength(l => {
                 if (l.type === 'hub') return 0.04;
                 if (l.type === 'internal') return 0.35;
                 if (l.type === 'cross-spec') return 0.18;
+                if (l.type === 'tref') return 0.22;
                 return 0.08;
             })
         )
@@ -398,10 +444,10 @@ function render({ nodes, links }) {
 
     // ── Zoom / Pan ───────────────────────────────────────────────────────────
     const zoomG = svg.append('g');
-    svg.call(d3.zoom()
+    const zoomBehavior = d3.zoom()
         .scaleExtent([0.04, 8])
-        .on('zoom', ev => zoomG.attr('transform', ev.transform))
-    );
+        .on('zoom', ev => zoomG.attr('transform', ev.transform));
+    svg.call(zoomBehavior);
 
     // ── Draw links ───────────────────────────────────────────────────────────
     const linkLayer = zoomG.append('g').attr('class', 'links-layer');
@@ -414,6 +460,7 @@ function render({ nodes, links }) {
             if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
             if (d.type === 'external') return specColor['external'];
             if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+            if (d.type === 'tref') return specColor[d.target.specId] || '#fff';
             return specColor[d.source.specId] || '#fff';
         })
         .attr('marker-end', d => {
@@ -421,6 +468,7 @@ function render({ nodes, links }) {
             if (d.type === 'hub') markerType = 'hub';
             else if (d.type === 'external') markerType = 'external';
             else if (d.type === 'cross-spec') markerType = 'cross-spec';
+            else if (d.type === 'tref') markerType = 'tref';
             return `url(#arrow-${markerType})`;
         });
 
@@ -613,7 +661,8 @@ function render({ nodes, links }) {
     });
 
     // ── Search / filter ──────────────────────────────────────────────────────
-    document.getElementById('search-input').addEventListener('input', function () {
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', function () {
         const q = this.value.toLowerCase().trim();
         nodeEl.select('circle').attr('opacity', d => {
             if (!q || d.nodeType === 'hub') return 1;
@@ -624,6 +673,23 @@ function render({ nodes, links }) {
             return d.label.toLowerCase().includes(q) ? 1 : 0.04;
         });
         linkEl.attr('opacity', !q ? null : 0.06);
+    });
+
+    const resetView = () => {
+        // Clear search-driven attribute opacity state.
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        // Clear selection-driven style opacity state.
+        resetSelection();
+        tt.style.display = 'none';
+        // Reset pan/zoom to the initial viewport transform.
+        svg.transition().duration(220).call(zoomBehavior.transform, d3.zoomIdentity);
+    };
+
+    document.addEventListener('keydown', ev => {
+        if (ev.key !== 'Escape') return;
+        ev.preventDefault();
+        resetView();
     });
 
     // ── Legend ───────────────────────────────────────────────────────────────
@@ -648,6 +714,10 @@ function render({ nodes, links }) {
                             <div class="leg-row">
                                 <div class="leg-dash" style="background:#8aaa9a;opacity:.35"></div>
                                 <span style="color:var(--text-dim)">intra-spec</span>
+                            </div>
+                            <div class="leg-row">
+                                <div class="leg-dash" style="background:#ffe066;opacity:.85"></div>
+                                <span style="color:#ffe066">tref origin</span>
                             </div>
                             <div class="leg-row">
                                 <div class="leg-dash" style="background:#ccc;opacity:.6;background: repeating-linear-gradient(90deg,#ccc 0,#ccc 4px,transparent 4px,transparent 7px)"></div>
