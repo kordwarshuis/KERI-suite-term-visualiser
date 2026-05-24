@@ -56,16 +56,16 @@ const CONFIG = {
     corsProxy: 'https://api.allorigins.win/raw?url=',
 
     // ── Physics tuning ──────────────────────────────────────────────────────────
-    hubCharge: -1200,   // repulsion of hub (spec-center) nodes
-    termCharge: -90,     // repulsion of term nodes
-    externalCharge: -200,    // repulsion of external-glossary nodes
-    centerStrength: 0.06,    // how strongly nodes are pulled toward their cluster
-    clusterRadiusFraction: 0.27,  // fraction of min(W,H) for hub positions
+    hubCharge: -1700,   // repulsion of hub (spec-center) nodes (was -1200)
+    termCharge: -180,    // repulsion of term nodes (was -90)
+    externalCharge: -260,    // repulsion of external-glossary nodes (was -200)
+    centerStrength: 0.04,    // how strongly nodes are pulled toward their cluster (was 0.06)
+    clusterRadiusFraction: 0.38,  // fraction of min(W,H) for hub positions (was 0.27)
 
     // Simulation settling controls (higher values settle faster).
-    simulationVelocityDecay: 0.8, // damping per tick; range 0.1–1.0; default in d3 is 0.4
-    simulationAlphaDecay: 0.08,    // cooling rate; range 0.001–0.1; was 0.007
-    simulationAlphaMin: 0.08,      // stop threshold; range 0.001–0.1; default in d3 is 0.001
+    simulationVelocityDecay: 0.82, // damping per tick; range 0.1–1.0; default in d3 is 0.4 (was 0.8)
+    simulationAlphaDecay: 0.06,    // cooling rate; range 0.001–0.1; was 0.007 (was 0.08)
+    simulationAlphaMin: 0.02,      // stop threshold; range 0.001–0.1; default in d3 is 0.001 (was 0.08)
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
