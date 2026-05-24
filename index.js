@@ -610,12 +610,20 @@ function render({ nodes, links }) {
     // ── Tooltip ──────────────────────────────────────────────────────────────
     const tt = document.getElementById('tooltip');
     let activeSelection = null;
+    let activeSpecFilter = null;
+    let activeSearchQuery = '';
     let activeNeighborIds = new Set();
     let activeLinkKeys = new Set();
+
+    const isNodeVisible = d => {
+        if (activeSpecFilter && d.nodeType !== 'hub' && d.specId !== activeSpecFilter) return false;
+        return !activeSearchQuery || d.nodeType === 'hub' || d.label.toLowerCase().includes(activeSearchQuery);
+    };
 
     const linkKey = l => `${l.source.id}→${l.target.id}`;
     const resetSelection = () => {
         activeSelection = null;
+        activeSpecFilter = null;
         activeNeighborIds.clear();
         activeLinkKeys.clear();
         nodeEl.select('circle').style('opacity', null);
@@ -623,10 +631,45 @@ function render({ nodes, links }) {
         linkGlowEl.style('opacity', null);
         linkEl.style('opacity', null);
     };
+    const applyVisibility = () => {
+        nodeEl.select('circle').style('opacity', d => {
+            if (!isNodeVisible(d)) return 0.04;
+            if (activeSpecFilter && d.nodeType !== 'hub') return 1;
+            if (activeSelection && (d.nodeType === 'hub' || activeNeighborIds.has(d.id))) return 1;
+            return 1;
+        });
+        nodeEl.select('text').style('opacity', d => {
+            if (!isNodeVisible(d)) return 0.02;
+            if (activeSpecFilter && d.nodeType !== 'hub') return 1;
+            if (activeSelection && (d.nodeType === 'hub' || activeNeighborIds.has(d.id))) return 1;
+            return 1;
+        });
+        if (activeSpecFilter) {
+            linkGlowEl.style('opacity', l => {
+                const sourceSpec = l.source.specId;
+                const targetSpec = l.target.specId;
+                return (sourceSpec === activeSpecFilter && targetSpec === activeSpecFilter) ? null : 0.03;
+            });
+            linkEl.style('opacity', l => {
+                const sourceSpec = l.source.specId;
+                const targetSpec = l.target.specId;
+                return (sourceSpec === activeSpecFilter && targetSpec === activeSpecFilter) ? 1 : 0.04;
+            });
+            return;
+        }
+        if (activeSelection) {
+            linkGlowEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? null : 0.03);
+            linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
+            return;
+        }
+        linkGlowEl.style('opacity', null);
+        linkEl.style('opacity', null);
+    };
     const setSelection = node => {
         activeSelection = node.id;
         activeNeighborIds = new Set([node.id]);
         activeLinkKeys = new Set();
+        activeSpecFilter = node.nodeType === 'hub' ? node.specId : null;
         for (const l of links) {
             if (l.source.id === node.id) {
                 activeNeighborIds.add(l.target.id);
@@ -637,16 +680,7 @@ function render({ nodes, links }) {
                 activeLinkKeys.add(linkKey(l));
             }
         }
-        nodeEl.select('circle').style('opacity', d => {
-            if (d.nodeType === 'hub' || activeNeighborIds.has(d.id)) return 1;
-            return 0.06;
-        });
-        nodeEl.select('text').style('opacity', d => {
-            if (d.nodeType === 'hub' || activeNeighborIds.has(d.id)) return 1;
-            return 0.04;
-        });
-        linkGlowEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? null : 0.03);
-        linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
+        applyVisibility();
     };
 
     nodeEl
@@ -667,7 +701,7 @@ function render({ nodes, links }) {
         .on('click', (ev, d) => {
             ev.stopPropagation();
             if (activeSelection === d.id) {
-                resetSelection();
+                resetView();
             } else {
                 setSelection(d);
             }
@@ -744,25 +778,18 @@ function render({ nodes, links }) {
     // ── Search / filter ──────────────────────────────────────────────────────
     const searchInput = document.getElementById('search-input');
     searchInput.addEventListener('input', function () {
-        const q = this.value.toLowerCase().trim();
-        nodeEl.select('circle').attr('opacity', d => {
-            if (!q || d.nodeType === 'hub') return 1;
-            return d.label.toLowerCase().includes(q) ? 1 : 0.06;
-        });
-        nodeEl.select('text').attr('opacity', d => {
-            if (!q || d.nodeType === 'hub') return 1;
-            return d.label.toLowerCase().includes(q) ? 1 : 0.04;
-        });
-        linkEl.attr('opacity', !q ? null : 0.06);
+        activeSearchQuery = this.value.toLowerCase().trim();
+        applyVisibility();
     });
 
     const resetView = () => {
         // Clear search-driven attribute opacity state.
         searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        activeSearchQuery = '';
         // Clear selection-driven style opacity state.
         resetSelection();
         tt.style.display = 'none';
+        applyVisibility();
         // Reset pan/zoom to the initial viewport transform.
         svg.transition().duration(220).call(zoomBehavior.transform, d3.zoomIdentity);
     };
