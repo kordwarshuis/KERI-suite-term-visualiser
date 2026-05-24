@@ -66,6 +66,12 @@ const CONFIG = {
     simulationVelocityDecay: 0.82, // damping per tick; min: 0.10, max: 1.00; default in d3 is 0.4 (was 0.8)
     simulationAlphaDecay: 0.06,    // cooling rate; min: 0.001, max: 0.100; default in d3 is 0.007 (was 0.08)
     simulationAlphaMin: 0.02,      // stop threshold; min: 0.001, max: 0.100; default in d3 is 0.001 (was 0.08)
+
+    // Auto-lite mode to keep interaction fluid on large graphs.
+    perfModeMaxLinks: 700,
+    perfModeMaxNodes: 350,
+    perfLiteHideTermLabels: true,
+    perfLiteDisableArrows: true,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -352,6 +358,13 @@ function buildGraphData(allTerms, allRawLinks) {
 function render({ nodes, links }) {
     const W = window.innerWidth;
     const H = window.innerHeight;
+    const usePerfLite = links.length > CONFIG.perfModeMaxLinks || nodes.length > CONFIG.perfModeMaxNodes;
+    const hideTermLabels = usePerfLite && CONFIG.perfLiteHideTermLabels;
+
+    // Precompute lowercase labels once to avoid repeated per-interaction work.
+    for (const node of nodes) node._labelLower = (node.label || '').toLowerCase();
+
+    document.body.classList.toggle('perf-lite', usePerfLite);
 
     const svg = d3.select('#graph').attr('viewBox', `0 0 ${W} ${H}`);
 
@@ -438,11 +451,15 @@ function render({ nodes, links }) {
                 return 0.08;
             })
         )
-        .force('charge', d3.forceManyBody().strength(d => {
-            if (d.nodeType === 'hub') return CONFIG.hubCharge;
-            if (d.nodeType === 'external') return CONFIG.externalCharge;
-            return CONFIG.termCharge;
-        }))
+        .force('charge', d3.forceManyBody()
+            .strength(d => {
+                if (d.nodeType === 'hub') return CONFIG.hubCharge;
+                if (d.nodeType === 'external') return CONFIG.externalCharge;
+                return CONFIG.termCharge;
+            })
+            .distanceMax(Math.min(W, H) * 0.55)
+            .theta(1)
+        )
         .force('cluster', alpha => {
             for (const node of nodes) {
                 const c = centers[node.specId] || centers['external'];
@@ -450,7 +467,7 @@ function render({ nodes, links }) {
                 node.vy += (c.y - node.y) * CONFIG.centerStrength * alpha;
             }
         })
-        .force('collide', d3.forceCollide().radius(d => d.r + 1.5).strength(0.7))
+        .force('collide', d3.forceCollide().radius(d => d.r + 1.5).strength(0.7).iterations(usePerfLite ? 1 : 2))
         .velocityDecay(CONFIG.simulationVelocityDecay)
         .alphaDecay(CONFIG.simulationAlphaDecay)
         .alphaMin(CONFIG.simulationAlphaMin);
@@ -465,36 +482,39 @@ function render({ nodes, links }) {
     // ── Draw links ───────────────────────────────────────────────────────────
     const linkLayer = zoomG.append('g').attr('class', 'links-layer');
 
-    const linkGlowEl = linkLayer.selectAll('line.link-glow')
-        .data(links)
-        .join('line')
-        .attr('class', d => `link link-glow ${d.type}`)
-        .attr('pointer-events', 'none')
-        .attr('stroke', d => {
-            if (d.type === 'tref') return '#ffe066';
-            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
-            if (d.type === 'external') return specColor['external'];
-            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
-            return specColor[d.source.specId] || '#fff';
-        })
-        .attr('stroke-width', d => {
-            if (d.type === 'tref') return 7;
-            if (d.type === 'cross-spec') return 6;
-            if (d.type === 'hub') return 5;
-            if (d.type === 'external') return 5;
-            return 4.5;
-        })
-        .attr('opacity', d => {
-            if (d.type === 'tref') return 0.28;
-            if (d.type === 'cross-spec') return 0.18;
-            if (d.type === 'hub') return 0.12;
-            if (d.type === 'external') return 0.12;
-            return 0.14;
-        })
-        .attr('filter', d => {
-            if (d.type === 'tref' || d.type === 'cross-spec') return 'url(#glow-md)';
-            return 'url(#glow-sm)';
-        });
+    let linkGlowEl = null;
+    if (!usePerfLite) {
+        linkGlowEl = linkLayer.selectAll('line.link-glow')
+            .data(links)
+            .join('line')
+            .attr('class', d => `link link-glow ${d.type}`)
+            .attr('pointer-events', 'none')
+            .attr('stroke', d => {
+                if (d.type === 'tref') return '#ffe066';
+                if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+                if (d.type === 'external') return specColor['external'];
+                if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
+                return specColor[d.source.specId] || '#fff';
+            })
+            .attr('stroke-width', d => {
+                if (d.type === 'tref') return 7;
+                if (d.type === 'cross-spec') return 6;
+                if (d.type === 'hub') return 5;
+                if (d.type === 'external') return 5;
+                return 4.5;
+            })
+            .attr('opacity', d => {
+                if (d.type === 'tref') return 0.28;
+                if (d.type === 'cross-spec') return 0.18;
+                if (d.type === 'hub') return 0.12;
+                if (d.type === 'external') return 0.12;
+                return 0.14;
+            })
+            .attr('filter', d => {
+                if (d.type === 'tref' || d.type === 'cross-spec') return 'url(#glow-md)';
+                return 'url(#glow-sm)';
+            });
+    }
 
     const linkEl = linkLayer.selectAll('line')
         .data(links)
@@ -508,6 +528,7 @@ function render({ nodes, links }) {
             return specColor[d.source.specId] || '#fff';
         })
         .attr('marker-end', d => {
+            if (usePerfLite && CONFIG.perfLiteDisableArrows) return null;
             let markerType = 'internal';
             if (d.type === 'hub') markerType = 'hub';
             else if (d.type === 'external') markerType = 'external';
@@ -519,8 +540,6 @@ function render({ nodes, links }) {
     // ── Draw nodes ───────────────────────────────────────────────────────────
     const nodeLayer = zoomG.append('g').attr('class', 'nodes-layer');
 
-    let isDragging = false;
-
     const nodeEl = nodeLayer.selectAll('g')
         .data(nodes)
         .join('g')
@@ -530,7 +549,6 @@ function render({ nodes, links }) {
                 if (!ev.active) simulation.alphaTarget(0.3).restart(); 
                 d.fx = d.x; 
                 d.fy = d.y;
-                isDragging = true;
                 linkEl.style('opacity', 0).style('pointer-events', 'none');
             })
             .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
@@ -538,13 +556,12 @@ function render({ nodes, links }) {
                 if (!ev.active) simulation.alphaTarget(0); 
                 d.fx = null; 
                 d.fy = null;
-                isDragging = false;
                 linkEl.style('opacity', null).style('pointer-events', null);
             })
         );
 
     // Circles
-    nodeEl.append('circle')
+    const nodeCircleEl = nodeEl.append('circle')
         .attr('r', d => d.r)
         .attr('fill', d => {
             const c = specColor[d.specId] || '#888';
@@ -555,6 +572,7 @@ function render({ nodes, links }) {
         .attr('stroke', d => specColor[d.specId] || '#888')
         .attr('stroke-width', d => d.nodeType === 'hub' ? 2 : 1)
         .attr('filter', d => {
+            if (usePerfLite) return null;
             if (d.nodeType === 'hub') return 'url(#glow-lg)';
             if (d.nodeType === 'external') return null;
             return 'url(#glow-sm)';
@@ -569,7 +587,10 @@ function render({ nodes, links }) {
             if (d.nodeType === 'external') return '#7a5028';
             return '#8aaa9a';
         })
-        .attr('filter', d => d.nodeType === 'hub' ? 'url(#glow-md)' : null)
+        .attr('filter', d => {
+            if (usePerfLite) return null;
+            return d.nodeType === 'hub' ? 'url(#glow-md)' : null;
+        })
         .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null);
 
     // Keep node drag/selection state stable when interacting with labels.
@@ -597,6 +618,10 @@ function render({ nodes, links }) {
             if (d.nodeType === 'external') return d.label.slice(0, 22);
             return d.label.length > 30 ? d.label.slice(0, 28) + '…' : d.label;
         })
+        .style('display', d => {
+            if (!hideTermLabels) return null;
+            return d.nodeType === 'hub' ? null : 'none';
+        })
         .on('click', (ev, d) => {
             if (d.nodeType !== 'term') return;
             ev.stopPropagation();
@@ -614,42 +639,68 @@ function render({ nodes, links }) {
     let activeSearchQuery = '';
     let activeNeighborIds = new Set();
     let activeLinkKeys = new Set();
+    const adjacency = new Map(nodes.map(n => [n.id, { neighbors: new Set([n.id]), linkKeys: new Set() }]));
 
     const isNodeVisible = d => {
         if (activeSpecFilter && d.nodeType !== 'hub' && d.specId !== activeSpecFilter) return false;
-        return !activeSearchQuery || d.nodeType === 'hub' || d.label.toLowerCase().includes(activeSearchQuery);
+        return !activeSearchQuery || d.nodeType === 'hub' || d._labelLower.includes(activeSearchQuery);
     };
 
     const linkKey = l => `${l.source.id}→${l.target.id}`;
+    for (const l of links) {
+        const key = linkKey(l);
+        const sourceEntry = adjacency.get(l.source.id);
+        const targetEntry = adjacency.get(l.target.id);
+        if (!sourceEntry || !targetEntry) continue;
+        sourceEntry.neighbors.add(l.target.id);
+        sourceEntry.linkKeys.add(key);
+        targetEntry.neighbors.add(l.source.id);
+        targetEntry.linkKeys.add(key);
+    }
+
     const resetSelection = () => {
         activeSelection = null;
         activeSpecFilter = null;
         activeNeighborIds.clear();
         activeLinkKeys.clear();
-        nodeEl.select('circle').style('opacity', null);
-        nodeEl.select('text').style('opacity', null);
-        linkGlowEl.style('opacity', null);
+        nodeCircleEl.style('opacity', null);
+        labelEl.style('opacity', null);
+        if (hideTermLabels) {
+            labelEl.style('display', d => d.nodeType === 'hub' ? null : 'none');
+        }
+        if (linkGlowEl) linkGlowEl.style('opacity', null);
         linkEl.style('opacity', null);
     };
     const applyVisibility = () => {
-        nodeEl.select('circle').style('opacity', d => {
+        nodeCircleEl.style('opacity', d => {
             if (!isNodeVisible(d)) return 0.04;
             if (activeSpecFilter && d.nodeType !== 'hub') return 1;
             if (activeSelection && (d.nodeType === 'hub' || activeNeighborIds.has(d.id))) return 1;
             return 1;
         });
-        nodeEl.select('text').style('opacity', d => {
+        labelEl.style('opacity', d => {
             if (!isNodeVisible(d)) return 0.02;
             if (activeSpecFilter && d.nodeType !== 'hub') return 1;
             if (activeSelection && (d.nodeType === 'hub' || activeNeighborIds.has(d.id))) return 1;
             return 1;
         });
-        if (activeSpecFilter) {
-            linkGlowEl.style('opacity', l => {
-                const sourceSpec = l.source.specId;
-                const targetSpec = l.target.specId;
-                return (sourceSpec === activeSpecFilter && targetSpec === activeSpecFilter) ? null : 0.03;
+        if (hideTermLabels) {
+            labelEl.style('display', d => {
+                if (d.nodeType === 'hub') return null;
+                if (!isNodeVisible(d)) return 'none';
+                if (activeSearchQuery) return null;
+                if (activeSelection) return activeNeighborIds.has(d.id) ? null : 'none';
+                return 'none';
             });
+        }
+        if (activeSpecFilter) {
+            if (linkGlowEl) {
+                linkGlowEl.style('opacity', l => {
+                    const sourceSpec = l.source.specId;
+                    const targetSpec = l.target.specId;
+                    return (sourceSpec === activeSpecFilter && targetSpec === activeSpecFilter) ? null : 0.03;
+                });
+            }
             linkEl.style('opacity', l => {
                 const sourceSpec = l.source.specId;
                 const targetSpec = l.target.specId;
@@ -658,28 +709,19 @@ function render({ nodes, links }) {
             return;
         }
         if (activeSelection) {
-            linkGlowEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? null : 0.03);
+            if (linkGlowEl) linkGlowEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? null : 0.03);
             linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
             return;
         }
-        linkGlowEl.style('opacity', null);
+        if (linkGlowEl) linkGlowEl.style('opacity', null);
         linkEl.style('opacity', null);
     };
     const setSelection = node => {
         activeSelection = node.id;
-        activeNeighborIds = new Set([node.id]);
-        activeLinkKeys = new Set();
+        const adjacent = adjacency.get(node.id);
+        activeNeighborIds = adjacent ? new Set(adjacent.neighbors) : new Set([node.id]);
+        activeLinkKeys = adjacent ? new Set(adjacent.linkKeys) : new Set();
         activeSpecFilter = node.nodeType === 'hub' ? node.specId : null;
-        for (const l of links) {
-            if (l.source.id === node.id) {
-                activeNeighborIds.add(l.target.id);
-                activeLinkKeys.add(linkKey(l));
-            }
-            if (l.target.id === node.id) {
-                activeNeighborIds.add(l.source.id);
-                activeLinkKeys.add(linkKey(l));
-            }
-        }
         applyVisibility();
     };
 
@@ -711,75 +753,60 @@ function render({ nodes, links }) {
         if (ev.target === svg.node()) resetSelection();
     });
 
-    // ── Tick ─────────────────────────────────────────────────────────────────
-    simulation.on('tick', () => {
-        linkGlowEl
-            .attr('x1', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.source.r || 0;
-                return d.source.x + (dx / dist) * r;
-            })
-            .attr('y1', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.source.r || 0;
-                return d.source.y + (dy / dist) * r;
-            })
-            .attr('x2', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.target.r || 0;
-                return d.target.x - (dx / dist) * r;
-            })
-            .attr('y2', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.target.r || 0;
-                return d.target.y - (dy / dist) * r;
-            });
+    const renderPositions = () => {
+        for (const l of links) {
+            const dx = l.target.x - l.source.x;
+            const dy = l.target.y - l.source.y;
+            const dist = Math.hypot(dx, dy) || 1;
+            const ux = dx / dist;
+            const uy = dy / dist;
+            const rs = l.source.r || 0;
+            const rt = l.target.r || 0;
+            l._x1 = l.source.x + ux * rs;
+            l._y1 = l.source.y + uy * rs;
+            l._x2 = l.target.x - ux * rt;
+            l._y2 = l.target.y - uy * rt;
+        }
+
+        if (linkGlowEl) {
+            linkGlowEl
+                .attr('x1', d => d._x1)
+                .attr('y1', d => d._y1)
+                .attr('x2', d => d._x2)
+                .attr('y2', d => d._y2);
+        }
 
         linkEl
-            .attr('x1', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.source.r || 0;
-                return d.source.x + (dx / dist) * r;
-            })
-            .attr('y1', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.source.r || 0;
-                return d.source.y + (dy / dist) * r;
-            })
-            .attr('x2', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.target.r || 0;
-                return d.target.x - (dx / dist) * r;
-            })
-            .attr('y2', d => {
-                const dx = d.target.x - d.source.x;
-                const dy = d.target.y - d.source.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                const r = d.target.r || 0;
-                return d.target.y - (dy / dist) * r;
-            });
+            .attr('x1', d => d._x1)
+            .attr('y1', d => d._y1)
+            .attr('x2', d => d._x2)
+            .attr('y2', d => d._y2);
         nodeEl.attr('transform', d => `translate(${d.x},${d.y})`);
+    };
+
+    // Throttle DOM writes to the browser paint loop.
+    let framePending = false;
+    simulation.on('tick', () => {
+        if (framePending) return;
+        framePending = true;
+        requestAnimationFrame(() => {
+            framePending = false;
+            renderPositions();
+        });
     });
+    renderPositions();
 
     // ── Search / filter ──────────────────────────────────────────────────────
     const searchInput = document.getElementById('search-input');
+    let searchDebounce = null;
     searchInput.addEventListener('input', function () {
-        activeSearchQuery = this.value.toLowerCase().trim();
-        applyVisibility();
+        const nextQuery = this.value.toLowerCase().trim();
+        if (nextQuery === activeSearchQuery) return;
+        if (searchDebounce) clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            activeSearchQuery = nextQuery;
+            applyVisibility();
+        }, 100);
     });
 
     const resetView = () => {

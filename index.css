@@ -40,6 +40,10 @@
         z-index: 900;
     }
 
+    body.perf-lite::after {
+        display: none;
+    }
+
     /* ── SVG CANVAS ───────────────────────────────────────────────────────── */
     svg#graph {
         display: block;
@@ -55,6 +59,10 @@
         backdrop-filter: blur(6px);
         padding: 12px 15px;
         z-index: 100;
+    }
+
+    body.perf-lite .panel {
+        backdrop-filter: none;
     }
 
     /* top-left: title + status + legend */
@@ -208,6 +216,10 @@
         stroke-linecap: round;
         stroke-linejoin: round;
         mix-blend-mode: screen;
+    }
+
+    body.perf-lite .link {
+        mix-blend-mode: normal;
     }
 
     .link-glow {
