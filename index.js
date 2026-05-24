@@ -465,6 +465,37 @@ function render({ nodes, links }) {
     // ── Draw links ───────────────────────────────────────────────────────────
     const linkLayer = zoomG.append('g').attr('class', 'links-layer');
 
+    const linkGlowEl = linkLayer.selectAll('line.link-glow')
+        .data(links)
+        .join('line')
+        .attr('class', d => `link link-glow ${d.type}`)
+        .attr('pointer-events', 'none')
+        .attr('stroke', d => {
+            if (d.type === 'tref') return '#ffe066';
+            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+            if (d.type === 'external') return specColor['external'];
+            if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
+            return specColor[d.source.specId] || '#fff';
+        })
+        .attr('stroke-width', d => {
+            if (d.type === 'tref') return 7;
+            if (d.type === 'cross-spec') return 6;
+            if (d.type === 'hub') return 5;
+            if (d.type === 'external') return 5;
+            return 4.5;
+        })
+        .attr('opacity', d => {
+            if (d.type === 'tref') return 0.28;
+            if (d.type === 'cross-spec') return 0.18;
+            if (d.type === 'hub') return 0.12;
+            if (d.type === 'external') return 0.12;
+            return 0.14;
+        })
+        .attr('filter', d => {
+            if (d.type === 'tref' || d.type === 'cross-spec') return 'url(#glow-md)';
+            return 'url(#glow-sm)';
+        });
+
     const linkEl = linkLayer.selectAll('line')
         .data(links)
         .join('line')
@@ -589,6 +620,7 @@ function render({ nodes, links }) {
         activeLinkKeys.clear();
         nodeEl.select('circle').style('opacity', null);
         nodeEl.select('text').style('opacity', null);
+        linkGlowEl.style('opacity', null);
         linkEl.style('opacity', null);
     };
     const setSelection = node => {
@@ -613,6 +645,7 @@ function render({ nodes, links }) {
             if (d.nodeType === 'hub' || activeNeighborIds.has(d.id)) return 1;
             return 0.04;
         });
+        linkGlowEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? null : 0.03);
         linkEl.style('opacity', l => activeLinkKeys.has(linkKey(l)) ? 1 : 0.06);
     };
 
@@ -646,6 +679,36 @@ function render({ nodes, links }) {
 
     // ── Tick ─────────────────────────────────────────────────────────────────
     simulation.on('tick', () => {
+        linkGlowEl
+            .attr('x1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.source.r || 0;
+                return d.source.x + (dx / dist) * r;
+            })
+            .attr('y1', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.source.r || 0;
+                return d.source.y + (dy / dist) * r;
+            })
+            .attr('x2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.target.r || 0;
+                return d.target.x - (dx / dist) * r;
+            })
+            .attr('y2', d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const r = d.target.r || 0;
+                return d.target.y - (dy / dist) * r;
+            });
+
         linkEl
             .attr('x1', d => {
                 const dx = d.target.x - d.source.x;

@@ -204,33 +204,40 @@
     .link {
         fill: none;
         stroke-width: 1.25;
-        opacity: .48;
+        opacity: .58;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        mix-blend-mode: screen;
+    }
+
+    .link-glow {
+        pointer-events: none;
     }
 
     .link.hub {
-        opacity: .34;
+        opacity: .42;
         stroke-width: .85;
     }
 
     .link.internal {
-        opacity: .62;
+        opacity: .72;
         stroke-width: 1.25;
     }
 
     .link.cross-spec {
-        opacity: .82;
+        opacity: .92;
         stroke-width: 1.7;
         stroke-dasharray: 6 3;
     }
 
     .link.tref {
-        opacity: .90;
-        stroke-width: 1.8;
+        opacity: .82;
+        stroke-width: 1.45;
         stroke-dasharray: none;
     }
 
     .link.external {
-        opacity: .42;
+        opacity: .52;
         stroke-width: 1.1;
         stroke-dasharray: 2 5;
     }
