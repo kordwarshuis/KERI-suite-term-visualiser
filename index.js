@@ -70,8 +70,8 @@ const CONFIG = {
     // Auto-lite mode to keep interaction fluid on large graphs.
     perfModeMaxLinks: 700,
     perfModeMaxNodes: 350,
-    perfLiteHideTermLabels: true,
-    perfLiteDisableArrows: true,
+    perfLiteHideTermLabels: false,
+    perfLiteDisableArrows: false,
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
