@@ -241,7 +241,7 @@
 
     .node text {
         font-family: var(--font);
-        font-size: 8.5px;
+        font-size: 13px;
         fill: #8aaa9a;
         pointer-events: none;
     }
@@ -252,7 +252,7 @@
     }
 
     .node.hub text {
-        font-size: 9px;
+        font-size: 12px;
         font-weight: bold;
         letter-spacing: .04em;
         fill: #ffffff;

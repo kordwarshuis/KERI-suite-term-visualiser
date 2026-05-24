@@ -56,16 +56,16 @@ const CONFIG = {
     corsProxy: 'https://api.allorigins.win/raw?url=',
 
     // ── Physics tuning ──────────────────────────────────────────────────────────
-    hubCharge: -1700,   // repulsion of hub (spec-center) nodes (was -1200)
-    termCharge: -180,    // repulsion of term nodes (was -90)
-    externalCharge: -260,    // repulsion of external-glossary nodes (was -200)
-    centerStrength: 0.04,    // how strongly nodes are pulled toward their cluster (was 0.06)
-    clusterRadiusFraction: 0.38,  // fraction of min(W,H) for hub positions (was 0.27)
+    hubCharge: -3000,   // repulsion of hub (spec-center) nodes; min: -3000, max: -200 (was -1200)
+    termCharge: -400,    // repulsion of term nodes; min: -400, max: -20 (was -90)
+    externalCharge: -600,    // repulsion of external-glossary nodes; min: -600, max: -40 (was -200)
+    centerStrength: 0,    // pull toward cluster center; min: 0.00, max: 0.20 (was 0.06)
+    clusterRadiusFraction: 0.38,  // fraction of min(W,H) for hub positions; min: 0.10, max: 0.50 (was 0.27)
 
     // Simulation settling controls (higher values settle faster).
-    simulationVelocityDecay: 0.82, // damping per tick; range 0.1–1.0; default in d3 is 0.4 (was 0.8)
-    simulationAlphaDecay: 0.06,    // cooling rate; range 0.001–0.1; was 0.007 (was 0.08)
-    simulationAlphaMin: 0.02,      // stop threshold; range 0.001–0.1; default in d3 is 0.001 (was 0.08)
+    simulationVelocityDecay: 0.82, // damping per tick; min: 0.10, max: 1.00; default in d3 is 0.4 (was 0.8)
+    simulationAlphaDecay: 0.06,    // cooling rate; min: 0.001, max: 0.100; default in d3 is 0.007 (was 0.08)
+    simulationAlphaMin: 0.02,      // stop threshold; min: 0.001, max: 0.100; default in d3 is 0.001 (was 0.08)
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -300,10 +300,23 @@ function buildGraphData(allTerms, allRawLinks) {
     const extNodes = new Map();   // externalLabel → nodeId
     const edgeSet = new Set();   // deduplicate
 
+    function edgePriority(type) {
+        if (type === 'tref') return 3;
+        if (type === 'cross-spec') return 2;
+        if (type === 'internal') return 1;
+        return 0;
+    }
+
     function addEdge(src, tgt, type) {
         if (src === tgt) return;
         const key = `${src}→${tgt}`;
-        if (edgeSet.has(key)) return;
+        if (edgeSet.has(key)) {
+            const existing = links.find(l => l.source === src && l.target === tgt);
+            if (existing && edgePriority(type) > edgePriority(existing.type)) {
+                existing.type = type;
+            }
+            return;
+        }
         edgeSet.add(key);
         links.push({ source: src, target: tgt, type });
     }
@@ -460,7 +473,7 @@ function render({ nodes, links }) {
             if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
             if (d.type === 'external') return specColor['external'];
             if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
-            if (d.type === 'tref') return specColor[d.target.specId] || '#fff';
+            if (d.type === 'tref') return '#ffe066';
             return specColor[d.source.specId] || '#fff';
         })
         .attr('marker-end', d => {
@@ -527,6 +540,11 @@ function render({ nodes, links }) {
         })
         .attr('filter', d => d.nodeType === 'hub' ? 'url(#glow-md)' : null)
         .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null);
+
+    // Keep node drag/selection state stable when interacting with labels.
+    labelEl
+        .on('mousedown', ev => ev.stopPropagation())
+        .on('click', ev => ev.stopPropagation());
 
     labelEl
         .filter(d => d.nodeType === 'hub')
