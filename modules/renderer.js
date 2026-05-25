@@ -197,6 +197,10 @@ export function render({ nodes, links }) {
     const zoomG = svg.append('g');
     let currentZoomK = 1;
 
+    let nodeCircleEl;
+    let labelEl;
+    let numberEl;
+
     const zoomBehavior = d3.zoom()
         .scaleExtent([0.04, 8])
         .on('zoom', ev => {
@@ -231,6 +235,10 @@ export function render({ nodes, links }) {
         labelEl
             .style('font-size', d => `${baseFontPx(d) * inv}px`)
             .attr('dy', d => d.nodeType === 'hub' ? '.35em' : (d._renderR + 10 * inv));
+
+        numberEl
+            .style('font-size', `${20 * inv}px`)
+            .attr('dy', d => (d.nodeType === 'hub' ? -d._renderR + 8 : -d._renderR + 5));
     }
 
     // Draw links
@@ -320,7 +328,7 @@ export function render({ nodes, links }) {
         );
 
     // Circles
-    const nodeCircleEl = nodeEl.append('circle')
+    nodeCircleEl = nodeEl.append('circle')
         .attr('r', d => d.r)
         .attr('fill', d => {
             const c = specColor[d.specId] || '#888';
@@ -338,7 +346,7 @@ export function render({ nodes, links }) {
         });
 
     // Labels
-    const labelEl = nodeEl.append('text')
+    labelEl = nodeEl.append('text')
         .attr('dy', d => d.nodeType === 'hub' ? '.35em' : d.r + 11)
         .attr('text-anchor', 'middle')
         .attr('fill', d => {
@@ -351,6 +359,15 @@ export function render({ nodes, links }) {
             return d.nodeType === 'hub' ? 'url(#glow-md)' : null;
         })
         .style('cursor', d => d.nodeType === 'term' ? 'pointer' : null);
+
+    numberEl = nodeEl.append('text')
+        .attr('class', 'node-number')
+        .attr('text-anchor', 'middle')
+        .attr('fill', d => d.nodeType === 'hub' ? '#ffffff' : '#c3e2d0')
+        .style('pointer-events', 'none')
+        .style('font-weight', '700')
+        .style('display', 'none')
+        .text('');
 
     // Keep node drag/selection state stable when interacting with labels.
     labelEl
@@ -720,6 +737,18 @@ export function render({ nodes, links }) {
         return nodes.find(n => n.id === id);
     }
 
+    const nodeGameNumber = d => {
+        if (gameState.active) {
+            const index = gameState.visitedPath.lastIndexOf(d.id);
+            return index >= 0 ? `${index}` : '';
+        }
+        if (gameState.revealed) {
+            const index = gameState.optimalPath.indexOf(d.id);
+            return index >= 0 ? `${index}` : '';
+        }
+        return '';
+    };
+
     function applyGameClasses() {
         if (!gameState.active && !gameState.revealed) {
             nodeEl.classed('game-current game-target game-reachable game-visited game-path', false);
@@ -749,6 +778,8 @@ export function render({ nodes, links }) {
         if (!gameState.active && !gameState.revealed) {
             nodeCircleEl.style('opacity', null);
             labelEl.style('opacity', null);
+            numberEl.style('display', 'none').text('');
+            numberEl.style('opacity', null);
             if (hideTermLabels) labelEl.style('display', d => d.nodeType === 'hub' ? null : 'none');
             if (linkGlowEl) linkGlowEl.style('opacity', null);
             linkEl.style('opacity', null);
@@ -767,6 +798,10 @@ export function render({ nodes, links }) {
         }
         nodeCircleEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.05);
         labelEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.02);
+        numberEl
+            .text(d => nodeGameNumber(d))
+            .style('display', d => nodeGameNumber(d) === '' ? 'none' : null)
+            .style('opacity', d => relevant.has(d.id) ? 1 : 0.02);
         if (hideTermLabels) {
             labelEl.style('display', d => {
                 if (d.nodeType === 'hub') return null;
