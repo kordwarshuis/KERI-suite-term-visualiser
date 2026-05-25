@@ -141,6 +141,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        min-width: 320px;
     }
 
     #search-label {
@@ -157,9 +158,14 @@
         font-family: var(--font);
         font-size: 11px;
         outline: none;
-        width: 180px;
+        width: 170px;
         padding: 3px 0;
         letter-spacing: .05em;
+    }
+
+    #sound-toggle-btn {
+        white-space: nowrap;
+        padding: 4px 8px;
     }
 
     #search-input::placeholder {

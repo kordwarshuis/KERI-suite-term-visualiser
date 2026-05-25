@@ -1,6 +1,37 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7/+esm';
 import { CONFIG, specById, specColor } from './config.js';
 
+const HowlCtor = globalThis.Howl;
+const clickSound = HowlCtor
+    ? new HowlCtor({ src: ['./assets/audio/click.mp3'], volume: 0.45 })
+    : null;
+const winSound = HowlCtor
+    ? new HowlCtor({ src: ['./assets/audio/60443__jobro__tada1.mp3'], volume: 0.55 })
+    : null;
+
+const SOUND_PREF_KEY = 'keri-sound-enabled';
+let soundEnabled = true;
+let lastTouchStartMs = 0;
+
+function playClickSound() {
+    if (!soundEnabled || !clickSound) return;
+    clickSound.play();
+}
+
+function playWinSound() {
+    if (!soundEnabled || !winSound) return;
+    winSound.play();
+}
+
+function getSavedSoundPreference() {
+    try {
+        const stored = globalThis.localStorage.getItem(SOUND_PREF_KEY);
+        return stored === null ? true : stored === '1';
+    } catch {
+        return true;
+    }
+}
+
 export function render({ nodes, links }) {
     const W = window.innerWidth;
     const H = window.innerHeight;
@@ -19,6 +50,37 @@ export function render({ nodes, links }) {
         visitedPath: [],
         optimalPath: [],
     };
+
+    const soundToggleBtn = document.getElementById('sound-toggle-btn');
+    function setSoundEnabled(enabled) {
+        soundEnabled = enabled;
+        try {
+            globalThis.localStorage.setItem(SOUND_PREF_KEY, enabled ? '1' : '0');
+        } catch {
+            // ignore storage failures
+        }
+        if (soundToggleBtn) {
+            soundToggleBtn.textContent = enabled ? 'SOUND ON' : 'SOUND OFF';
+        }
+    }
+    setSoundEnabled(getSavedSoundPreference());
+
+    if (soundToggleBtn) {
+        soundToggleBtn.addEventListener('click', () => {
+            setSoundEnabled(!soundEnabled);
+        });
+    }
+
+    // Touch devices often emit a synthetic click after touchstart; suppress the duplicate click sound.
+    document.addEventListener('touchstart', () => {
+        lastTouchStartMs = Date.now();
+        playClickSound();
+    }, { passive: true, capture: true });
+
+    document.addEventListener('click', () => {
+        if (Date.now() - lastTouchStartMs < 450) return;
+        playClickSound();
+    }, { passive: true, capture: true });
 
     // Precompute lowercase labels once to avoid repeated per-interaction work.
     for (const node of nodes) node._labelLower = (node.label || '').toLowerCase();
@@ -823,6 +885,7 @@ export function render({ nodes, links }) {
     function gameWon() {
         gameState.active = false;
         gameState.revealed = true;
+        playWinSound();
         const delta = gameState.moves - gameState.optimalMoves;
         let rating;
         let color;
