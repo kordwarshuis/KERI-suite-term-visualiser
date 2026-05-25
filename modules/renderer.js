@@ -670,7 +670,9 @@ export function render({ nodes, links }) {
 
     // Legend
     const legend = document.getElementById('legend');
-    legend.style.display = 'block';
+    if (legend) {
+        legend.style.display = 'block';
+    }
 
     let html = '<div class="leg-head">NODES</div>';
     for (const s of CONFIG.specs) {
@@ -702,7 +704,9 @@ export function render({ nodes, links }) {
                                 <div class="leg-dash" style="background: repeating-linear-gradient(90deg,#7a5520 0,#7a5520 2px,transparent 2px,transparent 6px)"></div>
                                 <span style="color:var(--text-dim)">→ external</span>
                             </div>`;
-    legend.innerHTML = html;
+    if (legend) {
+        legend.innerHTML = html;
+    }
 
     // Resize
     window.addEventListener('resize', () => {

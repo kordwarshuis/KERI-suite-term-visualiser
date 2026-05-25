@@ -89,6 +89,21 @@
         min-height: 18px;
     }
 
+    #repo-link {
+        margin-bottom: 10px;
+    }
+
+    #repo-link a {
+        color: var(--accent);
+        font-size: 10px;
+        letter-spacing: .12em;
+        text-decoration: none;
+    }
+
+    #repo-link a:hover {
+        text-decoration: underline;
+    }
+
     #status.ok {
         color: #5a9970;
     }
