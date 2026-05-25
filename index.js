@@ -869,7 +869,7 @@ function render({ nodes, links }) {
       <div class="leg-row">
         <div class="leg-dot" style="background:${s.color}22;border:1.5px solid ${s.color};box-shadow:0 0 6px ${s.color}66"></div>
         <span style="color:${s.color}">${s.label}</span>
-        <span style="color:var(--text-dim)">· term</span>
+        <!-- <span style="color:var(--text-dim)">· term</span> -->
       </div>`;
     }
     html += `
