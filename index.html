@@ -47,6 +47,43 @@
   <div id="game-actions">
     <button class="game-btn" id="game-start-btn">NEW GAME</button>
     <button class="game-btn" id="game-give-up-btn" style="display:none">GIVE UP</button>
+    <button class="game-btn" id="game-help-btn">HELP</button>
+  </div>
+</div>
+
+<!-- ── HELP MODAL ───────────────────────────────────────────────────────────── -->
+<div id="help-modal" class="help-modal" aria-hidden="true">
+  <div class="help-modal-card" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="help-modal-header">
+      <div id="help-modal-title">◈ PATH HUNT — how it works</div>
+      <button class="help-close-btn" id="help-close-btn" aria-label="Close help">×</button>
+    </div>
+    <div class="help-modal-content">
+      <p>A new panel appears in the <strong>bottom-left corner</strong> with two buttons:</p>
+      <table>
+        <thead><tr><th>Button</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>NEW GAME</strong></td><td>Picks a random start term, BFS-finds a target 3–8 hops away, begins the game</td></tr>
+          <tr><td><strong>GIVE UP</strong></td><td>Reveals the optimal path (highlighted in gold), shows optimal move count</td></tr>
+        </tbody>
+      </table>
+      <p><strong>During a game:</strong></p>
+      <ul>
+        <li>The <strong>current node</strong> pulses neon-green (◉ YOU ARE HERE in tooltip)</li>
+        <li>The <strong>target node</strong> pulses red (◎ TARGET in tooltip)</li>
+        <li><strong>Reachable neighbors</strong> glow amber with "→ REACHABLE — click to move" in tooltip</li>
+        <li>All other nodes are dimmed so you focus on what matters</li>
+        <li>Clicking a non-adjacent node shows "NOT CONNECTED ✗"</li>
+        <li>The HUD shows: START / TARGET / AT (current) / MOVES / BEST</li>
+      </ul>
+      <p><strong>When you reach the target:</strong></p>
+      <ul>
+        <li>★ OPTIMAL! — you matched the shortest path</li>
+        <li>◆ GOOD — within 2 extra moves</li>
+        <li>◇ DONE — you made it, but could do better</li>
+      </ul>
+      <p><strong>ESC</strong> cancels the game and returns to explore mode.</p>
+    </div>
   </div>
 </div>
 

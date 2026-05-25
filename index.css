@@ -377,6 +377,111 @@
         text-shadow: 0 0 8px #ffaa22;
     }
 
+    #help-modal {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(2, 8, 14, 0.82);
+        z-index: 1050;
+        padding: 20px;
+    }
+
+    #help-modal[aria-hidden="false"] {
+        display: flex;
+    }
+
+    .help-modal-card {
+        width: min(640px, 100%);
+        max-height: min(90vh, 720px);
+        overflow: auto;
+        background: rgba(3, 8, 15, 0.98);
+        border: 1px solid rgba(255, 170, 34, .25);
+        box-shadow: 0 0 40px rgba(255, 170, 34, .12);
+        padding: 22px 24px;
+    }
+
+    .help-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    #help-modal-title {
+        font-size: 12px;
+        letter-spacing: .12em;
+        color: #ffaa22;
+        text-transform: uppercase;
+    }
+
+    .help-close-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, .18);
+        color: #fff;
+        font-family: var(--font);
+        font-size: 14px;
+        width: 32px;
+        height: 32px;
+        cursor: pointer;
+        line-height: 1;
+        display: grid;
+        place-items: center;
+    }
+
+    .help-close-btn:hover {
+        border-color: #ffaa22;
+        color: #ffaa22;
+    }
+
+    .help-modal-content {
+        color: var(--text);
+        font-size: 11px;
+        line-height: 1.65;
+    }
+
+    .help-modal-content p,
+    .help-modal-content ul,
+    .help-modal-content table {
+        margin-bottom: 12px;
+    }
+
+    .help-modal-content strong {
+        color: #ffffff;
+    }
+
+    .help-modal-content ul {
+        padding-left: 18px;
+    }
+
+    .help-modal-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 14px;
+    }
+
+    .help-modal-content th,
+    .help-modal-content td {
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, .08);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .help-modal-content th {
+        color: #ffaa22;
+        font-size: 10px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .help-modal-content td {
+        color: var(--text-dim);
+        font-size: 10px;
+    }
+
     /* ── GAME NODE STATES ─────────────────────────────────────────────────── */
     @keyframes game-pulse {
         0%, 100% { opacity: 1; }

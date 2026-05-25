@@ -882,6 +882,10 @@ function render({ nodes, links }) {
     document.addEventListener('keydown', ev => {
         if (ev.key !== 'Escape') return;
         ev.preventDefault();
+        if (document.getElementById('help-modal')?.getAttribute('aria-hidden') === 'false') {
+            closeHelp();
+            return;
+        }
         if (gameState.active || gameState.revealed) { endGame(); return; }
         resetView();
     });
@@ -1223,9 +1227,25 @@ function render({ nodes, links }) {
         fitNodesInView([startNode.id, targetNode.id, ...startReachable]);
     }
 
-    // Wire game buttons
+    function openHelp() {
+        const helpModal = document.getElementById('help-modal');
+        if (!helpModal) return;
+        helpModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeHelp() {
+        const helpModal = document.getElementById('help-modal');
+        if (!helpModal) return;
+        helpModal.setAttribute('aria-hidden', 'true');
+    }
+
     document.getElementById('game-start-btn').addEventListener('click', startGame);
     document.getElementById('game-give-up-btn').addEventListener('click', giveUp);
+    document.getElementById('game-help-btn').addEventListener('click', openHelp);
+    document.getElementById('help-close-btn').addEventListener('click', closeHelp);
+    document.getElementById('help-modal').addEventListener('click', ev => {
+        if (ev.target === ev.currentTarget) closeHelp();
+    });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
