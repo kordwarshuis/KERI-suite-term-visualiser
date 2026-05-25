@@ -482,10 +482,43 @@ function render({ nodes, links }) {
 
     // ── Zoom / Pan ───────────────────────────────────────────────────────────
     const zoomG = svg.append('g');
+    let currentZoomK = 1;
+
     const zoomBehavior = d3.zoom()
         .scaleExtent([0.04, 8])
-        .on('zoom', ev => zoomG.attr('transform', ev.transform));
+        .on('zoom', ev => {
+            currentZoomK = ev.transform.k;
+            zoomG.attr('transform', ev.transform);
+            applyZoomInvariantSizing(currentZoomK);
+        });
     svg.call(zoomBehavior);
+
+    function applyZoomInvariantSizing(k = 1) {
+        const safeK = Math.max(0.04, k);
+        const inv = Math.max(0.65, Math.min(1 / safeK, 4.5));
+
+        const baseRadiusPx = d => {
+            if (d.nodeType === 'hub') return 28;
+            if (d.nodeType === 'external') return 9;
+            return 11;
+        };
+
+        const baseFontPx = d => {
+            if (d.nodeType === 'hub') return 12;
+            if (d.nodeType === 'external') return 10;
+            return 12;
+        };
+
+        nodeCircleEl
+            .attr('r', d => {
+                d._renderR = baseRadiusPx(d) * inv;
+                return d._renderR;
+            });
+
+        labelEl
+            .style('font-size', d => `${baseFontPx(d) * inv}px`)
+            .attr('dy', d => d.nodeType === 'hub' ? '.35em' : (d._renderR + 10 * inv));
+    }
 
     // ── Draw links ───────────────────────────────────────────────────────────
     const linkLayer = zoomG.append('g').attr('class', 'links-layer');
@@ -643,6 +676,7 @@ function render({ nodes, links }) {
             const url = `${spec.url.replace(/\/$/, '')}${anchor}`;
             window.open(url, '_blank', 'noopener');
         });
+    applyZoomInvariantSizing(currentZoomK);
 
     // ── Tooltip ──────────────────────────────────────────────────────────────
     const tt = document.getElementById('tooltip');
@@ -812,8 +846,8 @@ function render({ nodes, links }) {
             const dist = Math.hypot(dx, dy) || 1;
             const ux = dx / dist;
             const uy = dy / dist;
-            const rs = l.source.r || 0;
-            const rt = l.target.r || 0;
+            const rs = l.source._renderR ?? l.source.r ?? 0;
+            const rt = l.target._renderR ?? l.target.r ?? 0;
             l._x1 = l.source.x + ux * rs;
             l._y1 = l.source.y + uy * rs;
             l._x2 = l.target.x - ux * rt;
