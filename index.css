@@ -236,7 +236,7 @@
         stroke-width: 1.25;
     }
 
-    .link.cross-spec {
+    .link.xref {
         opacity: .92;
         stroke-width: 1.7;
         stroke-dasharray: 6 3;

@@ -170,7 +170,7 @@ function classifyHref(href, currentSpec) {
         if (base === specBase || base.startsWith(specBase + '/')) {
             if (!slug) return null;
             return {
-                type: s.id === currentSpec.id ? 'internal' : 'cross-spec',
+                type: s.id === currentSpec.id ? 'internal' : 'xref',
                 specId: s.id,
                 slug,
             };
@@ -232,10 +232,10 @@ function parsePage(html, spec) {
         }
     }
 
-    // ── Extract cross-spec tref links from embedded allXTrefs data ──────────
+    // ── Extract xref tref links from embedded allXTrefs data ──────────
     // Spec-Up-T embeds an `allXTrefs` JSON object in an inline <script> tag.
     // Each entry with sourceFiles[].type === "tref" means the term in THIS spec
-    // is borrowed from an external spec (ghPageUrl), creating a cross-spec link.
+    // is borrowed from an external spec (ghPageUrl), creating a xref link.
     for (const script of doc.querySelectorAll('script:not([src])')) {
         const text = (script.textContent || '').trim();
         if (!text.includes('"xtrefs"')) continue;
@@ -264,7 +264,7 @@ function parsePage(html, spec) {
                     }
                 }
             }
-            console.log(`[graph] ${spec.id}: ${trefCount} tref cross-spec links extracted from allXTrefs`);
+            console.log(`[graph] ${spec.id}: ${trefCount} tref xref links extracted from allXTrefs`);
         } catch (e) {
             console.warn(`[graph] Failed to parse allXTrefs for ${spec.id}:`, e);
         }
@@ -308,7 +308,7 @@ function buildGraphData(allTerms, allRawLinks) {
 
     function edgePriority(type) {
         if (type === 'tref') return 3;
-        if (type === 'cross-spec') return 2;
+        if (type === 'xref') return 2;
         if (type === 'internal') return 1;
         return 0;
     }
@@ -408,7 +408,7 @@ function render({ nodes, links }) {
     }
     makeArrow('arrow-hub');
     makeArrow('arrow-internal');
-    makeArrow('arrow-cross-spec');
+    makeArrow('arrow-xref');
     makeArrow('arrow-tref');
     makeArrow('arrow-external');
 
@@ -439,14 +439,14 @@ function render({ nodes, links }) {
             .distance(l => {
                 if (l.type === 'hub') return 95;
                 if (l.type === 'internal') return 40;
-                if (l.type === 'cross-spec') return 180;
+                if (l.type === 'xref') return 180;
                 if (l.type === 'tref') return 130;
                 return 130;  // external
             })
             .strength(l => {
                 if (l.type === 'hub') return 0.04;
                 if (l.type === 'internal') return 0.35;
-                if (l.type === 'cross-spec') return 0.18;
+                if (l.type === 'xref') return 0.18;
                 if (l.type === 'tref') return 0.22;
                 return 0.08;
             })
@@ -491,27 +491,27 @@ function render({ nodes, links }) {
             .attr('pointer-events', 'none')
             .attr('stroke', d => {
                 if (d.type === 'tref') return '#ffe066';
-                if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+                if (d.type === 'xref') return specColor[d.source.specId] || '#fff';
                 if (d.type === 'external') return specColor['external'];
                 if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
                 return specColor[d.source.specId] || '#fff';
             })
             .attr('stroke-width', d => {
                 if (d.type === 'tref') return 7;
-                if (d.type === 'cross-spec') return 6;
+                if (d.type === 'xref') return 6;
                 if (d.type === 'hub') return 5;
                 if (d.type === 'external') return 5;
                 return 4.5;
             })
             .attr('opacity', d => {
                 if (d.type === 'tref') return 0.28;
-                if (d.type === 'cross-spec') return 0.18;
+                if (d.type === 'xref') return 0.18;
                 if (d.type === 'hub') return 0.12;
                 if (d.type === 'external') return 0.12;
                 return 0.14;
             })
             .attr('filter', d => {
-                if (d.type === 'tref' || d.type === 'cross-spec') return 'url(#glow-md)';
+                if (d.type === 'tref' || d.type === 'xref') return 'url(#glow-md)';
                 return 'url(#glow-sm)';
             });
     }
@@ -523,7 +523,7 @@ function render({ nodes, links }) {
         .attr('stroke', d => {
             if (d.type === 'hub') return specColor[d.source.specId] || '#fff';
             if (d.type === 'external') return specColor['external'];
-            if (d.type === 'cross-spec') return specColor[d.source.specId] || '#fff';
+            if (d.type === 'xref') return specColor[d.source.specId] || '#fff';
             if (d.type === 'tref') return '#ffe066';
             return specColor[d.source.specId] || '#fff';
         })
@@ -532,7 +532,7 @@ function render({ nodes, links }) {
             let markerType = 'internal';
             if (d.type === 'hub') markerType = 'hub';
             else if (d.type === 'external') markerType = 'external';
-            else if (d.type === 'cross-spec') markerType = 'cross-spec';
+            else if (d.type === 'xref') markerType = 'xref';
             else if (d.type === 'tref') markerType = 'tref';
             return `url(#arrow-${markerType})`;
         });
@@ -868,15 +868,15 @@ function render({ nodes, links }) {
                             <div class="leg-head">EDGES</div>
                             <div class="leg-row">
                                 <div class="leg-dash" style="background:#8aaa9a;opacity:.35"></div>
-                                <span style="color:var(--text-dim)">intra-spec</span>
+                                <span style="color:var(--text-dim)">ref</span>
                             </div>
                             <div class="leg-row">
                                 <div class="leg-dash" style="background:#ffe066;opacity:.85"></div>
-                                <span style="color:#ffe066">tref origin</span>
+                                <span style="color:#ffe066">tref</span>
                             </div>
                             <div class="leg-row">
                                 <div class="leg-dash" style="background:#ccc;opacity:.6;background: repeating-linear-gradient(90deg,#ccc 0,#ccc 4px,transparent 4px,transparent 7px)"></div>
-                                <span style="color:var(--text-dim)">cross-spec</span>
+                                <span style="color:var(--text-dim)">xref</span>
                             </div>
                             <div class="leg-row">
                                 <div class="leg-dash" style="background: repeating-linear-gradient(90deg,#7a5520 0,#7a5520 2px,transparent 2px,transparent 6px)"></div>
