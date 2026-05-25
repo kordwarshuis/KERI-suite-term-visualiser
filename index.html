@@ -32,6 +32,24 @@
   hover &nbsp;·&nbsp; term details
 </div>
 
+<!-- ── GAME ────────────────────────────────────────────────────────────────── -->
+<div class="panel" id="game-panel">
+  <div id="game-title">&#x25C8; PATH HUNT</div>
+  <div id="game-desc">Navigate from term to term<br>in the fewest clicks</div>
+  <div id="game-info" style="display:none">
+    <div class="game-row"><span class="game-lbl">START</span><span id="game-from">—</span></div>
+    <div class="game-row"><span class="game-lbl">TARGET</span><span id="game-to">—</span></div>
+    <div class="game-row"><span class="game-lbl">AT</span><span id="game-at">—</span></div>
+    <div class="game-row"><span class="game-lbl">MOVES</span><span id="game-moves">0</span></div>
+    <div class="game-row"><span class="game-lbl">BEST</span><span id="game-optimal">?</span></div>
+  </div>
+  <div id="game-result"></div>
+  <div id="game-actions">
+    <button class="game-btn" id="game-start-btn">NEW GAME</button>
+    <button class="game-btn" id="game-give-up-btn" style="display:none">GIVE UP</button>
+  </div>
+</div>
+
 <!-- ── TOOLTIP ─────────────────────────────────────────────────────────────── -->
 <div id="tooltip"></div>
 

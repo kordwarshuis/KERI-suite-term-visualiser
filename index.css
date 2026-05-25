@@ -285,3 +285,142 @@
         fill: #6a5030;
         font-size: 8px;
     }
+
+    /* ── GAME PANEL ───────────────────────────────────────────────────────── */
+    #game-panel {
+        bottom: 14px;
+        left: 14px;
+        min-width: 200px;
+        max-width: 245px;
+    }
+
+    #game-title {
+        font-size: 10px;
+        letter-spacing: .22em;
+        color: #ffaa22;
+        text-transform: uppercase;
+        text-shadow: 0 0 10px #ffaa2299;
+        margin-bottom: 8px;
+    }
+
+    #game-desc {
+        color: var(--text-dim);
+        font-size: 10px;
+        line-height: 1.7;
+        margin-bottom: 8px;
+    }
+
+    #game-info {
+        margin-bottom: 8px;
+    }
+
+    .game-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 3px;
+        line-height: 1.5;
+        align-items: baseline;
+    }
+
+    .game-lbl {
+        font-size: 9px;
+        color: var(--text-dim);
+        letter-spacing: .10em;
+        flex-shrink: 0;
+        width: 48px;
+    }
+
+    .game-row span:last-child {
+        color: var(--text);
+        font-size: 10px;
+        word-break: break-word;
+    }
+
+    #game-moves,
+    #game-optimal {
+        color: #ffaa22 !important;
+        font-weight: bold;
+    }
+
+    #game-result {
+        font-size: 11px;
+        min-height: 16px;
+        margin-bottom: 6px;
+        line-height: 1.6;
+    }
+
+    .game-score-line {
+        font-size: 9px;
+        color: var(--text-dim);
+    }
+
+    #game-actions {
+        display: flex;
+        gap: 6px;
+    }
+
+    .game-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 170, 34, .35);
+        color: #ffaa22;
+        font-family: var(--font);
+        font-size: 9px;
+        letter-spacing: .10em;
+        padding: 4px 9px;
+        cursor: pointer;
+        text-transform: uppercase;
+    }
+
+    .game-btn:hover {
+        background: rgba(255, 170, 34, .12);
+        border-color: #ffaa22;
+        text-shadow: 0 0 8px #ffaa22;
+    }
+
+    /* ── GAME NODE STATES ─────────────────────────────────────────────────── */
+    @keyframes game-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.5; }
+    }
+
+    .node.game-current > circle {
+        stroke: var(--accent) !important;
+        stroke-width: 3px !important;
+        filter: url(#glow-lg) !important;
+        animation: game-pulse 1.2s ease-in-out infinite;
+    }
+
+    .node.game-target > circle {
+        stroke: #ff4455 !important;
+        stroke-width: 3px !important;
+        filter: url(#glow-lg) !important;
+        animation: game-pulse 0.9s ease-in-out infinite;
+    }
+
+    .node.game-reachable > circle {
+        stroke: #ffaa22 !important;
+        stroke-width: 2px !important;
+    }
+
+    .node.game-visited > circle {
+        stroke: #2a5538 !important;
+        stroke-width: 1.5px !important;
+    }
+
+    .node.game-path > circle {
+        stroke: #ffe066 !important;
+        stroke-width: 2px !important;
+        filter: url(#glow-md) !important;
+    }
+
+    /* tooltip game hints */
+    .tt-game {
+        margin-top: 5px;
+        font-size: 9px;
+        letter-spacing: .08em;
+    }
+
+    .tt-game.game-ok  { color: #ffaa22; }
+    .tt-game.game-tgt { color: #ff4455; }
+    .tt-game.game-cur { color: var(--accent); }
+    .tt-game.game-no  { color: #665544; }

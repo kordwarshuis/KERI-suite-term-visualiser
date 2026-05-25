@@ -361,6 +361,14 @@ function render({ nodes, links }) {
     const usePerfLite = links.length > CONFIG.perfModeMaxLinks || nodes.length > CONFIG.perfModeMaxNodes;
     const hideTermLabels = usePerfLite && CONFIG.perfLiteHideTermLabels;
 
+    // ── Game mode state (mutated by game functions below) ─────────────────────
+    const gameState = {
+        active: false, revealed: false,
+        startId: null, targetId: null, currentId: null,
+        moves: 0, optimalMoves: 0,
+        visitedPath: [], optimalPath: [],
+    };
+
     // Precompute lowercase labels once to avoid repeated per-interaction work.
     for (const node of nodes) node._labelLower = (node.label || '').toLowerCase();
 
@@ -627,6 +635,8 @@ function render({ nodes, links }) {
         .on('click', (ev, d) => {
             if (d.nodeType !== 'term') return;
             ev.stopPropagation();
+            if (gameState.active) { gameMoveToNode(d); return; }
+            if (gameState.revealed) return; // show results, no navigation
             const spec = specById[d.specId];
             if (!spec || !d.slug) return;
             const anchor = `#term:${encodeURIComponent(d.slug)}`;
@@ -754,10 +764,24 @@ function render({ nodes, links }) {
     nodeEl
         .on('mouseenter', (ev, d) => {
             const spec = specById[d.specId];
+            let gameHint = '';
+            if (gameState.active && d.nodeType === 'term') {
+                if (d.id === gameState.currentId) {
+                    gameHint = '<div class="tt-game game-cur">&#x25C9; YOU ARE HERE</div>';
+                } else if (d.id === gameState.targetId) {
+                    gameHint = '<div class="tt-game game-tgt">&#x25CE; TARGET</div>';
+                } else {
+                    const cadj = adjacency.get(gameState.currentId);
+                    gameHint = cadj?.neighbors.has(d.id)
+                        ? '<div class="tt-game game-ok">&rarr; REACHABLE &mdash; click to move</div>'
+                        : '<div class="tt-game game-no">&times; NOT CONNECTED</div>';
+                }
+            }
             tt.innerHTML = `
                             <div class="tt-name">${d.label}</div>
                             <div class="tt-spec">${spec ? spec.fullLabel : d.specId}</div>
                             ${d.slug ? `<div class="tt-slug">${d.slug}</div>` : ''}
+                            ${gameHint}
                             `;
             tt.style.display = 'block';
         })
@@ -768,6 +792,8 @@ function render({ nodes, links }) {
         .on('mouseleave', () => { tt.style.display = 'none'; })
         .on('click', (ev, d) => {
             ev.stopPropagation();
+            if (gameState.active) { gameMoveToNode(d); return; }
+            if (gameState.revealed) return;
             if (activeSelection === d.id) {
                 resetView();
             } else {
@@ -856,6 +882,7 @@ function render({ nodes, links }) {
     document.addEventListener('keydown', ev => {
         if (ev.key !== 'Escape') return;
         ev.preventDefault();
+        if (gameState.active || gameState.revealed) { endGame(); return; }
         resetView();
     });
 
@@ -900,6 +927,274 @@ function render({ nodes, links }) {
     window.addEventListener('resize', () => {
         svg.attr('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight}`);
     });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GAME MODE — PATH HUNT
+    // ═══════════════════════════════════════════════════════════════════════════
+    const termNodes = nodes.filter(n => n.nodeType === 'term');
+    const termNodeIdSet = new Set(termNodes.map(n => n.id));
+
+    /** BFS shortest path through term nodes only. Returns [id, …] or null. */
+    function bfsPath(fromId, toId) {
+        const queue = [[fromId]];
+        const visited = new Set([fromId]);
+        while (queue.length) {
+            const path = queue.shift();
+            const cur = path.at(-1);
+            if (cur === toId) return path;
+            const cadj = adjacency.get(cur);
+            if (!cadj) continue;
+            for (const nb of cadj.neighbors) {
+                if (!visited.has(nb) && termNodeIdSet.has(nb)) {
+                    visited.add(nb);
+                    queue.push([...path, nb]);
+                }
+            }
+        }
+        return null;
+    }
+
+    function nodeById(id) { return nodes.find(n => n.id === id); }
+
+    function applyGameClasses() {
+        if (!gameState.active && !gameState.revealed) {
+            nodeEl.classed('game-current game-target game-reachable game-visited game-path', false);
+            return;
+        }
+        const cadj = adjacency.get(gameState.currentId);
+        const reachable = cadj
+            ? new Set([...cadj.neighbors].filter(id => termNodeIdSet.has(id)))
+            : new Set();
+        nodeEl
+            .classed('game-current',  d => d.id === gameState.currentId)
+            .classed('game-target',   d => d.id === gameState.targetId)
+            .classed('game-reachable', d =>
+                gameState.active &&
+                d.id !== gameState.currentId &&
+                d.id !== gameState.targetId &&
+                reachable.has(d.id))
+            .classed('game-visited', d =>
+                d.id !== gameState.currentId &&
+                gameState.visitedPath.includes(d.id))
+            .classed('game-path', d =>
+                gameState.revealed &&
+                gameState.optimalPath.includes(d.id));
+    }
+
+    function applyGameVisibility() {
+        if (!gameState.active && !gameState.revealed) {
+            nodeCircleEl.style('opacity', null);
+            labelEl.style('opacity', null);
+            if (hideTermLabels) labelEl.style('display', d => d.nodeType === 'hub' ? null : 'none');
+            if (linkGlowEl) linkGlowEl.style('opacity', null);
+            linkEl.style('opacity', null);
+            return;
+        }
+        const cadj = adjacency.get(gameState.currentId);
+        const reachable = cadj ? cadj.neighbors : new Set();
+        const relevant = new Set([
+            gameState.currentId,
+            gameState.targetId,
+            ...reachable,
+            ...gameState.visitedPath,
+        ]);
+        if (gameState.revealed) {
+            for (const id of gameState.optimalPath) relevant.add(id);
+        }
+        nodeCircleEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.05);
+        labelEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.02);
+        if (hideTermLabels) {
+            labelEl.style('display', d => {
+                if (d.nodeType === 'hub') return null;
+                return relevant.has(d.id) ? null : 'none';
+            });
+        }
+        if (linkGlowEl) {
+            linkGlowEl.style('opacity', l =>
+                (relevant.has(l.source.id) && relevant.has(l.target.id)) ? null : 0);
+        }
+        linkEl.style('opacity', l =>
+            (relevant.has(l.source.id) && relevant.has(l.target.id)) ? 0.9 : 0.02);
+    }
+
+    function updateGameHUD() {
+        const infoEl    = document.getElementById('game-info');
+        const descEl    = document.getElementById('game-desc');
+        const fromEl    = document.getElementById('game-from');
+        const atEl      = document.getElementById('game-at');
+        const toEl      = document.getElementById('game-to');
+        const movesEl   = document.getElementById('game-moves');
+        const optimalEl = document.getElementById('game-optimal');
+        const resultEl  = document.getElementById('game-result');
+        const giveUpBtn = document.getElementById('game-give-up-btn');
+
+        if (!gameState.active && !gameState.revealed) {
+            infoEl.style.display    = 'none';
+            descEl.style.display    = '';
+            giveUpBtn.style.display = 'none';
+            resultEl.textContent    = '';
+            resultEl.style.color    = '';
+            return;
+        }
+        descEl.style.display = 'none';
+        infoEl.style.display = '';
+        fromEl.textContent   = nodeById(gameState.startId)?.label   ?? '?';
+        toEl.textContent     = nodeById(gameState.targetId)?.label  ?? '?';
+        atEl.textContent     = nodeById(gameState.currentId)?.label ?? '?';
+        movesEl.textContent  = gameState.moves;
+        optimalEl.textContent = gameState.revealed ? gameState.optimalMoves : '?';
+        giveUpBtn.style.display = gameState.active ? '' : 'none';
+    }
+
+    function panToNode(node) {
+        if (node.x == null) return;
+        const transform = d3.zoomTransform(svg.node());
+        const scale = Math.max(transform.k, 1.4);
+        const tx = window.innerWidth  / 2 - scale * node.x;
+        const ty = window.innerHeight / 2 - scale * node.y;
+        svg.transition().duration(500)
+            .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }
+
+    function showGameFeedback(msg, color = '#ff4455') {
+        const resultEl = document.getElementById('game-result');
+        resultEl.textContent = msg;
+        resultEl.style.color = color;
+        setTimeout(() => {
+            if (resultEl.textContent === msg) {
+                resultEl.textContent = '';
+                resultEl.style.color = '';
+            }
+        }, 1400);
+    }
+
+    function gameMoveToNode(d) {
+        if (d.nodeType !== 'term') return;
+        if (d.id === gameState.currentId) return;
+        const cadj = adjacency.get(gameState.currentId);
+        if (!cadj?.neighbors.has(d.id)) {
+            showGameFeedback('NOT CONNECTED ✗');
+            return;
+        }
+        gameState.currentId = d.id;
+        gameState.moves++;
+        gameState.visitedPath.push(d.id);
+        applyGameClasses();
+        applyGameVisibility();
+        updateGameHUD();
+        panToNode(d);
+        if (d.id === gameState.targetId) gameWon();
+    }
+
+    function gameWon() {
+        gameState.active   = false;
+        gameState.revealed = true;
+        const delta = gameState.moves - gameState.optimalMoves;
+        let rating, color;
+        if (delta === 0)      { rating = '&#x2605; OPTIMAL!'; color = 'var(--accent)'; }
+        else if (delta <= 2)  { rating = '&#x25C6; GOOD';     color = '#ffaa22'; }
+        else                  { rating = '&#x25C7; DONE';     color = '#9abfaa'; }
+        const resultEl = document.getElementById('game-result');
+        resultEl.innerHTML =
+            `${rating}<br><span class="game-score-line">` +
+            `${gameState.moves} moves &middot; optimal: ${gameState.optimalMoves}</span>`;
+        resultEl.style.color = color;
+        applyGameClasses();
+        applyGameVisibility();
+        updateGameHUD();
+    }
+
+    function giveUp() {
+        if (!gameState.active) return;
+        gameState.active   = false;
+        gameState.revealed = true;
+        const resultEl = document.getElementById('game-result');
+        resultEl.style.color = '#cc7733';
+        resultEl.innerHTML =
+            `GAVE UP<br><span class="game-score-line">` +
+            `optimal: ${gameState.optimalMoves} moves</span>`;
+        applyGameClasses();
+        applyGameVisibility();
+        updateGameHUD();
+    }
+
+    function endGame() {
+        gameState.active   = false;
+        gameState.revealed = false;
+        gameState.startId  = gameState.targetId = gameState.currentId = null;
+        gameState.moves    = gameState.optimalMoves = 0;
+        gameState.visitedPath = [];
+        gameState.optimalPath = [];
+        applyGameClasses();
+        applyGameVisibility();
+        updateGameHUD();
+    }
+
+    function startGame() {
+        if (termNodes.length < 6) {
+            document.getElementById('game-result').textContent = 'Not enough terms loaded.';
+            return;
+        }
+        endGame();
+
+        // BFS from a random start; find a target 3–8 hops away
+        let attempts = 0, optPath = null, startNode, targetNode;
+        while (attempts++ < 80 && !optPath) {
+            startNode = termNodes[Math.floor(Math.random() * termNodes.length)];
+
+            // Collect BFS distances from startNode through term nodes
+            const dist = new Map([[startNode.id, 0]]);
+            const bfsQ = [startNode.id];
+            let qi = 0;
+            while (qi < bfsQ.length) {
+                const cur = bfsQ[qi++];
+                const cadj = adjacency.get(cur);
+                if (!cadj) continue;
+                for (const nb of cadj.neighbors) {
+                    if (!dist.has(nb) && termNodeIdSet.has(nb)) {
+                        dist.set(nb, dist.get(cur) + 1);
+                        bfsQ.push(nb);
+                    }
+                }
+            }
+
+            const candidates = [...dist.entries()]
+                .filter(([, d]) => d >= 3 && d <= 8)
+                .map(([id]) => id);
+            if (!candidates.length) continue;
+
+            const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+            targetNode = nodeById(targetId);
+            optPath = bfsPath(startNode.id, targetId);
+        }
+
+        if (!optPath) {
+            document.getElementById('game-result').textContent =
+                'Could not find a valid path — try again.';
+            return;
+        }
+
+        Object.assign(gameState, {
+            active: true, revealed: false,
+            startId:   startNode.id,
+            targetId:  targetNode.id,
+            currentId: startNode.id,
+            moves: 0,
+            optimalMoves: optPath.length - 1,
+            visitedPath:  [startNode.id],
+            optimalPath:  optPath,
+        });
+
+        resetSelection();
+        applyGameClasses();
+        applyGameVisibility();
+        updateGameHUD();
+        panToNode(startNode);
+    }
+
+    // Wire game buttons
+    document.getElementById('game-start-btn').addEventListener('click', startGame);
+    document.getElementById('game-give-up-btn').addEventListener('click', giveUp);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
