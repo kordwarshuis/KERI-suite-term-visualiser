@@ -8,6 +8,13 @@ const clickSound = HowlCtor
 const winSound = HowlCtor
     ? new HowlCtor({ src: ['./assets/audio/60443__jobro__tada1.mp3'], volume: 0.55 })
     : null;
+const gameMusic = HowlCtor
+    ? new HowlCtor({
+        src: ['./assets/audio/521656__mrthenoronha__soft-game-theme-loop.mp3'],
+        volume: 0.28,
+        loop: true,
+    })
+    : null;
 
 const SOUND_PREF_KEY = 'keri-sound-enabled';
 let soundEnabled = true;
@@ -21,6 +28,17 @@ function playClickSound() {
 function playWinSound() {
     if (!soundEnabled || !winSound) return;
     winSound.play();
+}
+
+function startGameMusic() {
+    if (!soundEnabled || !gameMusic) return;
+    if (gameMusic.playing()) return;
+    gameMusic.play();
+}
+
+function stopGameMusic() {
+    if (!gameMusic) return;
+    gameMusic.stop();
 }
 
 function getSavedSoundPreference() {
@@ -54,6 +72,11 @@ export function render({ nodes, links }) {
     const soundToggleBtn = document.getElementById('sound-toggle-btn');
     function setSoundEnabled(enabled) {
         soundEnabled = enabled;
+        if (!enabled) {
+            stopGameMusic();
+        } else if (gameState.active) {
+            startGameMusic();
+        }
         try {
             globalThis.localStorage.setItem(SOUND_PREF_KEY, enabled ? '1' : '0');
         } catch {
@@ -975,6 +998,7 @@ export function render({ nodes, links }) {
     function gameWon() {
         gameState.active = false;
         gameState.revealed = true;
+        stopGameMusic();
         playWinSound();
         const delta = gameState.moves - gameState.optimalMoves;
         let rating;
@@ -1003,6 +1027,7 @@ export function render({ nodes, links }) {
         if (!gameState.active) return;
         gameState.active = false;
         gameState.revealed = true;
+        stopGameMusic();
         const resultEl = document.getElementById('game-result');
         resultEl.style.color = '#cc7733';
         resultEl.innerHTML =
@@ -1014,6 +1039,7 @@ export function render({ nodes, links }) {
     }
 
     function endGame() {
+        stopGameMusic();
         gameState.active = false;
         gameState.revealed = false;
         gameState.startId = null;
@@ -1086,6 +1112,8 @@ export function render({ nodes, links }) {
             visitedPath: [startNode.id],
             optimalPath: optPath,
         });
+
+        startGameMusic();
 
         resetSelection();
         applyGameClasses();
