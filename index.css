@@ -260,7 +260,7 @@
 
     .node text {
         font-family: var(--font);
-        font-size: 13px;
+        font-size: 23px;
         fill: #8aaa9a;
         pointer-events: none;
     }
