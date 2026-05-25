@@ -639,6 +639,7 @@ function render({ nodes, links }) {
     let activeSelection = null;
     let activeSpecFilter = null;
     let activeSearchQuery = '';
+    let isSearchTyping = false;
     let activeNeighborIds = new Set();
     let activeLinkKeys = new Set();
     let pinnedNode = null;
@@ -711,6 +712,11 @@ function render({ nodes, links }) {
                 if (activeSelection) return activeNeighborIds.has(d.id) ? null : 'none';
                 return 'none';
             });
+        }
+        if (isSearchTyping && !activeSelection && !activeSpecFilter) {
+            if (linkGlowEl) linkGlowEl.style('opacity', 0);
+            linkEl.style('opacity', 0);
+            return;
         }
         if (activeSpecFilter) {
             if (linkGlowEl) {
@@ -821,18 +827,24 @@ function render({ nodes, links }) {
     let searchDebounce = null;
     searchInput.addEventListener('input', function () {
         const nextQuery = this.value.toLowerCase().trim();
-        if (nextQuery === activeSearchQuery) return;
+        isSearchTyping = nextQuery.length > 0;
+        if (nextQuery === activeSearchQuery) {
+            applyVisibility();
+            return;
+        }
         if (searchDebounce) clearTimeout(searchDebounce);
         searchDebounce = setTimeout(() => {
             activeSearchQuery = nextQuery;
             applyVisibility();
         }, 100);
+        applyVisibility();
     });
 
     const resetView = () => {
         // Clear search-driven attribute opacity state.
         searchInput.value = '';
         activeSearchQuery = '';
+        isSearchTyping = false;
         // Clear selection-driven style opacity state.
         resetSelection();
         tt.style.display = 'none';
