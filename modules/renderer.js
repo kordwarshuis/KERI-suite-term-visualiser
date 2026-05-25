@@ -538,8 +538,13 @@ export function render({ nodes, links }) {
             if (gameState.active && d.nodeType === 'term') {
                 if (d.id === gameState.currentId) {
                     gameHint = '<div class="tt-game game-cur">&#x25C9; YOU ARE HERE</div>';
+                } else if (d.id === gameState.startId) {
+                    gameHint = '<div class="tt-game game-no">&#x25C9; START NODE &mdash; locked</div>';
                 } else if (d.id === gameState.targetId) {
-                    gameHint = '<div class="tt-game game-tgt">&#x25CE; TARGET</div>';
+                    const cadj = adjacency.get(gameState.currentId);
+                    gameHint = cadj?.neighbors.has(d.id)
+                        ? '<div class="tt-game game-tgt">&#x25CE; TARGET &mdash; click to finish</div>'
+                        : '<div class="tt-game game-tgt">&#x25CE; TARGET &mdash; not connected yet</div>';
                 } else {
                     const cadj = adjacency.get(gameState.currentId);
                     gameHint = cadj?.neighbors.has(d.id)
@@ -756,6 +761,7 @@ export function render({ nodes, links }) {
     function applyGameClasses() {
         if (!gameState.active && !gameState.revealed) {
             nodeEl.classed('game-current game-target game-reachable game-visited game-path', false);
+            applyGameInteractivity();
             return;
         }
         const cadj = adjacency.get(gameState.currentId);
@@ -768,6 +774,7 @@ export function render({ nodes, links }) {
             .classed('game-reachable', d =>
                 gameState.active
                 && d.id !== gameState.currentId
+                && d.id !== gameState.startId
                 && d.id !== gameState.targetId
                 && reachable.has(d.id))
             .classed('game-visited', d =>
@@ -776,6 +783,39 @@ export function render({ nodes, links }) {
             .classed('game-path', d =>
                 gameState.revealed
                 && gameState.optimalPath.includes(d.id));
+        applyGameInteractivity();
+    }
+
+    function applyGameInteractivity() {
+        if (!gameState.active) {
+            nodeEl.style('cursor', d => d.nodeType === 'term' ? 'pointer' : null);
+            nodeEl.style('pointer-events', null);
+            labelEl
+                .filter(d => d.nodeType === 'term')
+                .style('pointer-events', null)
+                .style('cursor', 'pointer');
+            return;
+        }
+
+        const cadj = adjacency.get(gameState.currentId);
+        const reachable = cadj ? cadj.neighbors : new Set();
+        const canMoveTo = d =>
+            d.nodeType === 'term'
+            && d.id !== gameState.currentId
+            && d.id !== gameState.startId
+            && reachable.has(d.id);
+
+        nodeEl.style('pointer-events', d => canMoveTo(d) ? 'auto' : 'none');
+        nodeEl.style('cursor', d => {
+            if (d.nodeType !== 'term') return null;
+            return canMoveTo(d) ? 'pointer' : 'not-allowed';
+        });
+        labelEl
+            .filter(d => d.nodeType === 'term')
+            .style('pointer-events', d => canMoveTo(d) ? 'auto' : 'none')
+            .style('cursor', d => {
+                return canMoveTo(d) ? 'pointer' : 'not-allowed';
+            });
     }
 
     function applyGameVisibility() {
@@ -800,12 +840,12 @@ export function render({ nodes, links }) {
         if (gameState.revealed) {
             for (const id of gameState.optimalPath) relevant.add(id);
         }
-        nodeCircleEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.05);
-        labelEl.style('opacity', d => relevant.has(d.id) ? 1 : 0.02);
+        nodeCircleEl.style('opacity', d => relevant.has(d.id) ? 1 : 0);
+        labelEl.style('opacity', d => relevant.has(d.id) ? 1 : 0);
         numberEl
             .text(d => nodeGameNumber(d))
             .style('display', d => nodeGameNumber(d) === '' ? 'none' : null)
-            .style('opacity', d => relevant.has(d.id) ? 1 : 0.02);
+            .style('opacity', d => relevant.has(d.id) ? 1 : 0);
         if (hideTermLabels) {
             labelEl.style('display', d => {
                 if (d.nodeType === 'hub') return null;
@@ -817,7 +857,7 @@ export function render({ nodes, links }) {
                 (relevant.has(l.source.id) && relevant.has(l.target.id)) ? null : 0);
         }
         linkEl.style('opacity', l =>
-            (relevant.has(l.source.id) && relevant.has(l.target.id)) ? 0.9 : 0.02);
+            (relevant.has(l.source.id) && relevant.has(l.target.id)) ? 0.9 : 0);
     }
 
     function updateGameHUD() {
@@ -905,8 +945,19 @@ export function render({ nodes, links }) {
 
     function gameMoveToNode(d) {
         if (d.nodeType !== 'term') return;
-        if (d.id === gameState.currentId) return;
         const cadj = adjacency.get(gameState.currentId);
+        if (d.id === gameState.currentId) {
+            showGameFeedback('YOU ARE HERE');
+            return;
+        }
+        if (d.id === gameState.startId) {
+            showGameFeedback('START NODE LOCKED');
+            return;
+        }
+        if (d.id === gameState.targetId && !cadj?.neighbors.has(d.id)) {
+            showGameFeedback('TARGET NOT CONNECTED');
+            return;
+        }
         if (!cadj?.neighbors.has(d.id)) {
             showGameFeedback('NOT CONNECTED ✗');
             return;
