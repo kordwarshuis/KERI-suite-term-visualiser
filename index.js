@@ -56,10 +56,10 @@ const CONFIG = {
     corsProxy: 'https://api.allorigins.win/raw?url=',
 
     // ── Physics tuning ──────────────────────────────────────────────────────────
-    hubCharge: -3000,   // repulsion of hub (spec-center) nodes; min: -3000, max: -200 (was -1200)
-    termCharge: -2400,    // repulsion of term nodes; min: -400, max: -20 (was -90)
+    hubCharge: -1200,   // repulsion of hub (spec-center) nodes; min: -3000, max: -200 (was -1200)
+    termCharge: -4000,    // repulsion of term nodes; min: -400, max: -20 (was -90)
     externalCharge: -600,    // repulsion of external-glossary nodes; min: -600, max: -40 (was -200)
-    centerStrength: 0,    // pull toward cluster center; min: 0.00, max: 0.20 (was 0.06)
+    centerStrength: 0.06,    // pull toward cluster center; min: 0.00, max: 0.20 (was 0.06)
     clusterRadiusFraction: 0.38,  // fraction of min(W,H) for hub positions; min: 0.10, max: 0.50 (was 0.27)
 
     // Simulation settling controls (higher values settle faster).
@@ -1056,6 +1056,35 @@ function render({ nodes, links }) {
             .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
     }
 
+    function fitNodesInView(nodeIds, padding = 80) {
+        const nodesToFit = nodeIds
+            .map(id => nodeById(id))
+            .filter(n => n && typeof n.x === 'number' && typeof n.y === 'number');
+        if (!nodesToFit.length) return;
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        for (const n of nodesToFit) {
+            const r = n.r || 0;
+            minX = Math.min(minX, n.x - r);
+            maxX = Math.max(maxX, n.x + r);
+            minY = Math.min(minY, n.y - r);
+            maxY = Math.max(maxY, n.y + r);
+        }
+
+        const boxW = Math.max(24, maxX - minX);
+        const boxH = Math.max(24, maxY - minY);
+        const availableW = Math.max(24, window.innerWidth - padding * 2);
+        const availableH = Math.max(24, window.innerHeight - padding * 2);
+        const scale = Math.min(8, Math.max(0.04, Math.min(availableW / boxW, availableH / boxH)));
+        const centerX = minX + boxW / 2;
+        const centerY = minY + boxH / 2;
+        const tx = window.innerWidth / 2 - scale * centerX;
+        const ty = window.innerHeight / 2 - scale * centerY;
+
+        svg.transition().duration(500)
+            .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }
+
     function showGameFeedback(msg, color = '#ff4455') {
         const resultEl = document.getElementById('game-result');
         resultEl.textContent = msg;
@@ -1189,7 +1218,9 @@ function render({ nodes, links }) {
         applyGameClasses();
         applyGameVisibility();
         updateGameHUD();
-        panToNode(startNode);
+        const startReachable = [...(adjacency.get(startNode.id)?.neighbors || [])]
+            .filter(id => termNodeIdSet.has(id));
+        fitNodesInView([startNode.id, targetNode.id, ...startReachable]);
     }
 
     // Wire game buttons
