@@ -57,7 +57,7 @@ const CONFIG = {
 
     // ── Physics tuning ──────────────────────────────────────────────────────────
     hubCharge: -3000,   // repulsion of hub (spec-center) nodes; min: -3000, max: -200 (was -1200)
-    termCharge: -400,    // repulsion of term nodes; min: -400, max: -20 (was -90)
+    termCharge: -2400,    // repulsion of term nodes; min: -400, max: -20 (was -90)
     externalCharge: -600,    // repulsion of external-glossary nodes; min: -600, max: -40 (was -200)
     centerStrength: 0,    // pull toward cluster center; min: 0.00, max: 0.20 (was 0.06)
     clusterRadiusFraction: 0.38,  // fraction of min(W,H) for hub positions; min: 0.10, max: 0.50 (was 0.27)
