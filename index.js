@@ -554,8 +554,10 @@ function render({ nodes, links }) {
             .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
             .on('end', (ev, d) => { 
                 if (!ev.active) simulation.alphaTarget(0); 
-                d.fx = null; 
-                d.fy = null;
+                if (pinnedNode !== d) {
+                    d.fx = null; 
+                    d.fy = null;
+                }
                 linkEl.style('opacity', null).style('pointer-events', null);
             })
         );
@@ -639,7 +641,23 @@ function render({ nodes, links }) {
     let activeSearchQuery = '';
     let activeNeighborIds = new Set();
     let activeLinkKeys = new Set();
+    let pinnedNode = null;
     const adjacency = new Map(nodes.map(n => [n.id, { neighbors: new Set([n.id]), linkKeys: new Set() }]));
+
+    const releasePinnedNode = () => {
+        if (!pinnedNode) return;
+        pinnedNode.fx = null;
+        pinnedNode.fy = null;
+        pinnedNode = null;
+    };
+
+    const pinNode = d => {
+        if (pinnedNode === d) return;
+        releasePinnedNode();
+        pinnedNode = d;
+        d.fx = d.x;
+        d.fy = d.y;
+    };
 
     const isNodeVisible = d => {
         if (activeSpecFilter && d.nodeType !== 'hub' && d.specId !== activeSpecFilter) return false;
@@ -663,6 +681,7 @@ function render({ nodes, links }) {
         activeSpecFilter = null;
         activeNeighborIds.clear();
         activeLinkKeys.clear();
+        releasePinnedNode();
         nodeCircleEl.style('opacity', null);
         labelEl.style('opacity', null);
         if (hideTermLabels) {
@@ -722,6 +741,7 @@ function render({ nodes, links }) {
         activeNeighborIds = adjacent ? new Set(adjacent.neighbors) : new Set([node.id]);
         activeLinkKeys = adjacent ? new Set(adjacent.linkKeys) : new Set();
         activeSpecFilter = node.nodeType === 'hub' ? node.specId : null;
+        pinNode(node);
         applyVisibility();
     };
 
