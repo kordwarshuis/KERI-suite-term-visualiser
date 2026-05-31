@@ -15,6 +15,13 @@ const gameMusic = HowlCtor
         loop: true,
     })
     : null;
+const forestAmbience = HowlCtor
+    ? new HowlCtor({
+        src: ['./assets/audio/20574_dobroide_20060706.night.forest01.mp3'],
+        volume: 0.18,
+        loop: true,
+    })
+    : null;
 
 const SOUND_PREF_KEY = 'keri-sound-enabled';
 let soundEnabled = true;
@@ -70,12 +77,27 @@ export function render({ nodes, links }) {
     };
 
     const soundToggleBtn = document.getElementById('sound-toggle-btn');
+    function startForestAmbience() {
+        if (!soundEnabled || !forestAmbience) return;
+        if (forestAmbience.playing()) return;
+        forestAmbience.play();
+    }
+
+    function stopForestAmbience() {
+        if (!forestAmbience) return;
+        forestAmbience.stop();
+    }
+
     function setSoundEnabled(enabled) {
         soundEnabled = enabled;
         if (!enabled) {
             stopGameMusic();
-        } else if (gameState.active) {
-            startGameMusic();
+            stopForestAmbience();
+        } else {
+            startForestAmbience();
+            if (gameState.active) {
+                startGameMusic();
+            }
         }
         try {
             globalThis.localStorage.setItem(SOUND_PREF_KEY, enabled ? '1' : '0');
