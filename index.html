@@ -18,6 +18,8 @@
   <div id="status">INITIALISING…</div>
   <div id="legend"></div>
   <div id="repo-link"><a href="https://github.com/kordwarshuis/KERI-suite-term-visualiser" target="_blank" rel="noopener noreferrer">View on GitHub</a></div>
+</div>
+
 <!-- ── SEARCH ──────────────────────────────────────────────────────────────── -->
 <div class="panel" id="search-panel">
   <span id="search-label">SEARCH&nbsp;›</span>
@@ -48,6 +50,33 @@
     <button class="game-btn" id="game-start-btn">NEW GAME</button>
     <button class="game-btn" id="game-give-up-btn" style="display:none">GIVE UP</button>
     <button class="game-btn" id="game-help-btn">HELP</button>
+  </div>
+</div>
+
+<!-- ── WELCOME MODAL ─────────────────────────────────────────────────────────── -->
+<div id="welcome-modal" class="help-modal" aria-hidden="false">
+  <div class="help-modal-card" role="dialog" aria-modal="true" aria-labelledby="welcome-modal-title">
+    <div class="help-modal-header">
+      <div id="welcome-modal-title">&#x2B22; KERI Suite · Term Graph</div>
+    </div>
+    <div class="help-modal-content">
+      <p>Welcome to the <strong>KERI Suite Term Graph</strong> — an interactive map of terminology drawn from the KERI, ACDC, and related specifications.</p>
+      <table>
+        <thead><tr><th>Interaction</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Scroll</strong></td><td>Zoom in / out</td></tr>
+          <tr><td><strong>Drag (background)</strong></td><td>Pan the graph</td></tr>
+          <tr><td><strong>Drag (node)</strong></td><td>Move a single term node</td></tr>
+          <tr><td><strong>Hover</strong></td><td>See term details and spec origin</td></tr>
+        </tbody>
+      </table>
+      <p><strong>PATH HUNT</strong> — a mini-game hidden in the graph. Click <em>NEW GAME</em> in the bottom-right panel to pick a random start term and a target term; navigate by clicking adjacent nodes and try to reach the target in the fewest moves. Press <strong>HELP</strong> in the game panel for full rules.</p>
+      <p>Use the <strong>SEARCH</strong> bar (top-right) to filter terms by name.</p>
+      <p style="color:var(--text-dim);font-size:10px;">&#9834; Clicking <strong>OK</strong> also enables in-game sound effects and ambient audio.</p>
+    </div>
+    <div id="welcome-actions">
+      <button class="game-btn" id="welcome-ok-btn">OK — EXPLORE</button>
+    </div>
   </div>
 </div>
 

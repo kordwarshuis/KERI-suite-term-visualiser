@@ -402,7 +402,7 @@
         text-shadow: 0 0 8px #ffaa22;
     }
 
-    #help-modal {
+    .help-modal {
         position: fixed;
         inset: 0;
         display: none;
@@ -413,7 +413,7 @@
         padding: 20px;
     }
 
-    #help-modal[aria-hidden="false"] {
+    .help-modal[aria-hidden="false"] {
         display: flex;
     }
 
@@ -505,6 +505,26 @@
     .help-modal-content td {
         color: var(--text-dim);
         font-size: 10px;
+    }
+
+    /* ── WELCOME MODAL ────────────────────────────────────────────────────── */
+    #welcome-modal-title {
+        font-size: 13px;
+        letter-spacing: .14em;
+        color: var(--accent);
+        text-transform: uppercase;
+        text-shadow: 0 0 10px var(--accent);
+    }
+
+    #welcome-actions {
+        margin-top: 18px;
+        text-align: right;
+    }
+
+    #welcome-ok-btn {
+        font-size: 11px;
+        letter-spacing: .12em;
+        padding: 8px 22px;
     }
 
     /* ── GAME NODE STATES ─────────────────────────────────────────────────── */
