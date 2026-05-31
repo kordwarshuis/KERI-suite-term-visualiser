@@ -121,7 +121,7 @@ export function render({ nodes, links }) {
         .attr('patternUnits', 'userSpaceOnUse');
     grid.append('path')
         .attr('d', 'M 44 0 L 0 0 0 44')
-        .attr('fill', 'none').attr('stroke', 'rgba(0,255,140,0.045)').attr('stroke-width', 0.5);
+        .attr('fill', 'none').attr('stroke', 'rgba(80,130,255,0.04)').attr('stroke-width', 0.5);
 
     // Glow filters
     function makeGlow(id, stdDev) {
@@ -158,6 +158,29 @@ export function render({ nodes, links }) {
 
     // Background
     svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'url(#bg-grid)');
+
+    // Stars (fixed backdrop, outside zoom group)
+    {
+        const starCount = Math.min(320, Math.floor(W * H / 7000));
+        const starData = Array.from({ length: starCount }, () => ({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.15 + 0.2,
+            o: Math.random() * 0.65 + 0.18,
+            // occasional slightly larger brighter stars
+            bright: Math.random() < 0.08,
+        }));
+        const starLayer = svg.append('g').attr('class', 'star-layer').attr('pointer-events', 'none');
+        starLayer.selectAll('circle')
+            .data(starData)
+            .join('circle')
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+            .attr('r', d => d.bright ? d.r * 2.2 : d.r)
+            .attr('fill', d => d.bright ? '#ddeeff' : 'white')
+            .attr('opacity', d => d.bright ? d.o * 0.9 : d.o)
+            .attr('filter', d => d.bright ? 'url(#glow-sm)' : null);
+    }
 
     // Cluster positions
     const n = CONFIG.specs.length;

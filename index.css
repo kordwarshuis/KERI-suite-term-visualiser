@@ -8,12 +8,12 @@
     }
 
     :root {
-        --bg: #03080d;
-        --panel-bg: rgba(2, 12, 20, 0.88);
-        --panel-bd: rgba(0, 255, 140, 0.22);
-        --text: #9abfaa;
-        --text-dim: #5ea07a;
-        --accent: #00ff8c;
+        --bg: #05081a;
+        --panel-bg: rgba(6, 10, 32, 0.70);
+        --panel-bd: rgba(120, 180, 255, 0.22);
+        --text: #b8d4f0;
+        --text-dim: #6080a8;
+        --accent: #80c8ff;
         --font: 'Courier New', Courier, monospace;
     }
 
@@ -22,7 +22,11 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: var(--bg);
+        background:
+            radial-gradient(ellipse at 25% 38%, rgba(28, 48, 120, 0.50) 0%, transparent 55%),
+            radial-gradient(ellipse at 73% 64%, rgba(55, 15, 100, 0.38) 0%, transparent 52%),
+            radial-gradient(ellipse at 58% 12%, rgba(10, 20, 80, 0.32) 0%, transparent 42%),
+            var(--bg);
         color: var(--text);
         font-family: var(--font);
         font-size: 11px;
@@ -35,7 +39,7 @@
         inset: 0;
         background: repeating-linear-gradient(180deg,
                 transparent, transparent 3px,
-                rgba(0, 0, 0, 0.07) 3px, rgba(0, 0, 0, 0.07) 4px);
+                rgba(0, 0, 20, 0.025) 3px, rgba(0, 0, 20, 0.025) 4px);
         pointer-events: none;
         z-index: 900;
     }
@@ -168,7 +172,7 @@
     #search-input {
         background: transparent;
         border: none;
-        border-bottom: 1px solid rgba(0, 255, 140, .25);
+        border-bottom: 1px solid rgba(100, 170, 255, .28);
         color: var(--accent);
         font-family: var(--font);
         font-size: 11px;
@@ -199,8 +203,8 @@
     /* ── TOOLTIP ──────────────────────────────────────────────────────────── */
     #tooltip {
         position: fixed;
-        background: rgba(2, 10, 18, 0.96);
-        border: 1px solid rgba(0, 255, 140, .4);
+        background: rgba(5, 10, 30, 0.94);
+        border: 1px solid rgba(100, 170, 255, .38);
         color: var(--text);
         font-family: var(--font);
         font-size: 11px;
@@ -226,7 +230,7 @@
 
     #tooltip .tt-slug {
         font-size: 9px;
-        color: #73c597;
+        color: #70b8e0;
     }
 
     /* ── D3 NODE / LINK STYLES ────────────────────────────────────────────── */
@@ -282,7 +286,7 @@
     .node text {
         font-family: var(--font);
         font-size: 23px;
-        fill: #8aaa9a;
+        fill: #90b8d8;
         pointer-events: none;
     }
 
