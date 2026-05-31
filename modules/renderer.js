@@ -346,7 +346,13 @@ export function render({ nodes, links }) {
                     d.fx = null;
                     d.fy = null;
                 }
-                linkEl.style('opacity', null).style('pointer-events', null);
+                linkEl.style('pointer-events', null);
+                if (gameState.active || gameState.revealed) {
+                    applyGameVisibility();
+                } else {
+                    linkEl.style('opacity', null);
+                    applyVisibility();
+                }
             })
         );
 
