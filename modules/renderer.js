@@ -716,6 +716,7 @@ export function render({ nodes, links }) {
         searchDebounce = setTimeout(() => {
             activeSearchQuery = nextQuery;
             applyVisibility();
+            fitSearchHitsInView();
         }, 100);
         applyVisibility();
     });
@@ -1003,6 +1004,17 @@ export function render({ nodes, links }) {
 
         svg.transition().duration(500)
             .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    }
+
+    function fitSearchHitsInView() {
+        if (!activeSearchQuery || activeSelection || activeSpecFilter || gameState.active || gameState.revealed) {
+            return;
+        }
+        const hitIds = nodes
+            .filter(d => d.nodeType === 'term' && d._labelLower.includes(activeSearchQuery))
+            .map(d => d.id);
+        if (!hitIds.length) return;
+        fitNodesInView(hitIds);
     }
 
     function showGameFeedback(msg, color = '#ff4455') {
